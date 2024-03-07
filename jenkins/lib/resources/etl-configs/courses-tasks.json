@@ -1,0 +1,27 @@
+{
+  "ingestion": {
+    "general": {
+      "job_name": "courses-tasks-ingestion",
+      "target_table": "lms_l3.fact_courses_tasks_staging",
+      "partition_columns": "version"
+    },
+    "auth": {
+      "auth_strategy": "OAUTH2",
+      "auth_url": "https://vm-tex-01:8243/token",
+      "client_id": "${CLIENT_ID}",
+      "client_secret": "${CLIENT_SECRET}"
+    },
+    "fetching_strategy": {
+      "fetching_strategy": "SNAPSHOT"
+    },
+    "data_source": {
+      "data_source": "GENERIC-REST",
+      "api_url": "https://vm-tex-01:8243/1c/api/v2/courses"
+    }
+  },
+  "processing": {
+    "sql_processor": {
+      "plan_id": "fact_courses_tasks"
+    }
+  }
+}

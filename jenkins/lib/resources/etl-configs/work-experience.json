@@ -1,0 +1,8 @@
+{
+  "processing": {
+    "work_experience_processor": {
+      "work_experience_target_table": "commons_l3.fact_employee_work_experience_history",
+      "work_experience_source_table": "commons_l3.fact_employees_change_history"
+    }
+  }
+}

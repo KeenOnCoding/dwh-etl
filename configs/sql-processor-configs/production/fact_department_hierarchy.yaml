@@ -1,0 +1,26 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - resourcing_l3.fact_department_hierarchy_staging
+  queries:
+    - description: copy from staging table
+      staging-table: resourcing_l3.fact_department_hierarchy_staging
+      partition-column: batch_id
+      sql: |
+        BEGIN TRANSACTION [tran]
+        BEGIN TRY
+          DELETE FROM resourcing_l3.fact_department_hierarchy
+          WHERE date IN (
+            SELECT DISTINCT(date) 
+            FROM resourcing_l3.fact_department_hierarchy_staging
+            WHERE {BATCH_HIGH_LOW_FILTER}
+          )
+          INSERT INTO resourcing_l3.fact_department_hierarchy
+          SELECT * FROM resourcing_l3.fact_department_hierarchy_staging
+          WHERE {BATCH_HIGH_LOW_FILTER} 
+          COMMIT TRANSACTION [tran]
+        END TRY
+        BEGIN CATCH
+          ROLLBACK TRANSACTION [tran]
+        END CATCH

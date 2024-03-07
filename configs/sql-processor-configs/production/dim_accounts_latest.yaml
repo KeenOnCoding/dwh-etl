@@ -1,0 +1,33 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - commons_l3.dim_accounts_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - commons_l3.dim_accounts_latest
+  queries:
+    - description: copy from tmp
+      staging-table: commons_l3.dim_accounts_staging
+      partition-column: version
+      sql: |
+        INSERT INTO commons_l3.dim_accounts_latest(
+          version, id, name, domain_id, 
+          country_id, cost_center_id, 
+          new_business_date, new_business_df,
+          business_type, am_id, creation_date
+        )
+        SELECT
+          version,
+          id,
+          name,
+          domain_id,
+          country_id,
+          cost_center_id,
+          new_business_date,
+          CAST(new_business_date AS DATE) AS new_business_df,
+          business_type,
+          am_id,
+          creation_date
+        FROM commons_l3.dim_accounts_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

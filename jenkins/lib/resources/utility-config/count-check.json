@@ -1,0 +1,7 @@
+{
+    "count_check": {
+        "count_check_table": "dbo.util_uttool_error",
+        "count_metric_name": "v1_uttool_err"
+    }
+
+}

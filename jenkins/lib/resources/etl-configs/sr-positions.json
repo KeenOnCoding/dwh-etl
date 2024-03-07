@@ -1,0 +1,32 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "sr-positions-ingestion",
+            "target_table": "resourcing_l3.dim_sr_positions_staging",
+            "partition_columns": "version"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://www.smartrecruiters.com/identity/oauth/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "SNAPSHOT"
+        },
+        "enrichers": {
+            "track_db_schema": true,
+            "hash_column": "hash_sum",
+            "have_hash_sum": true
+        },
+        "data_source": {
+            "data_source": "SMART-RECRUITERS-REST",
+            "api_url": "https://api.smartrecruiters.com/reporting-api/v201804/reports/20608961-e200-4566-b13a-b19ec779b14c/files/recent/data"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id": "dim_sr_positions_latest"
+        }
+    }
+}

@@ -1,0 +1,35 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - finance_l2.fact_credit_note_staging
+  queries:
+    - description: copy credit note from staging table
+      staging-table: finance_l2.fact_credit_note_staging
+      partition-column: batch_id
+      sql: |
+        BEGIN TRANSACTION [tran]
+        BEGIN TRY
+         DELETE FROM finance_l2.fact_credit_note_latest
+         WHERE EOMONTH(date) in 
+           (SELECT DISTINCT(EOMONTH(date)) FROM finance_l2.fact_credit_note_staging
+            WHERE {BATCH_HIGH_LOW_FILTER})
+         INSERT INTO finance_l2.fact_credit_note_latest
+         SELECT batch_id,
+                id,
+                date,
+                period,
+                amount * -1 AS amount,
+                amount_usd * -1 AS amount_usd,
+                currency_id,
+                project_id,
+                held,
+                deleted,
+                invoice_id
+          FROM finance_l2.fact_credit_note_staging
+         WHERE {BATCH_HIGH_LOW_FILTER}
+         COMMIT TRANSACTION [tran]
+        END TRY
+        BEGIN CATCH
+         ROLLBACK TRANSACTION [tran]
+        END CATCH        

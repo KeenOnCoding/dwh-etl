@@ -1,0 +1,37 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "ets-project-ingestion",
+            "target_table": "commons_l3.dim_ets_projects_staging",
+            "partition_columns": "version"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "SNAPSHOT"
+        },
+        "enrichers": {
+            "track_db_schema": true,
+            "field_mapping":
+                [
+                    {
+                        "from": "uuid",
+                        "to": "id"
+                    }
+                ]
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "api_url": "https://vm-tex-01:8243/ets/authorized/project"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id": "dim_ets_projects_latest"
+        }
+    }
+}

@@ -1,0 +1,201 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - finance_l2.fact_salary_reports
+      - finance_l2.fact_revenue_reports
+
+  queries:
+    - description: copy salaries and revenue from staging
+      staging-table: finance_l2.fact_finance_reports_staging
+      partition-column: batch_id
+      auto-cleanup:
+        - "#DATES_TO_REMOVE"
+      sql: |
+        SELECT DISTINCT CAST([date] as DATE) as [date]
+        INTO #DATES_TO_REMOVE
+        FROM finance_l2.fact_finance_reports_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};
+
+        -- overwrite old records
+        DELETE FROM finance_l2.fact_salary_reports
+        WHERE CAST([date] as DATE) in (SELECT date from #DATES_TO_REMOVE);
+
+        DELETE FROM finance_l2.fact_revenue_reports
+        WHERE CAST([date] as DATE) in (SELECT date from #DATES_TO_REMOVE);
+
+
+        INSERT INTO finance_l2.fact_salary_reports(
+          [date],
+          df,
+          [type],
+          project_id,
+          blbl_salaries_operation_staff,
+          non_blbl_salaries_operation_staff,
+          direct_overhead_salaries,
+          admin_salaries,
+          admin_salaries_com,
+          admin_salaries_trn,
+          admin_salaries_est,
+          admin_salaries_sls,
+          admin_salaries_vacation,
+          admin_salaries_sickness,
+          admin_salaries_partner_support,
+          admin_salaries_other,
+          production_overhead_salaries,
+          production_overhead_salaries_com,
+          production_overhead_salaries_trn,
+          production_overhead_salaries_est,
+          production_overhead_salaries_sls,
+          production_overhead_salaries_vacation,
+          production_overhead_salaries_sickness,
+          production_overhead_salaries_other,
+          batch_id,
+          department_id,
+          project_type,
+          taxes,
+          insurance)
+        SELECT
+          [date],
+          CAST([date] AS DATE) AS df,
+          [type],
+          project_id,
+          blbl_salaries_operation_staff,
+          non_blbl_salaries_operation_staff,
+          direct_overhead_salaries,
+          admin_salaries,
+          admin_salaries_com,
+          admin_salaries_trn,
+          admin_salaries_est,
+          admin_salaries_sls,
+          admin_salaries_vacation,
+          admin_salaries_sickness,
+          admin_salaries_partner_support,
+          admin_salaries_other,
+          production_overhead_salaries,
+          production_overhead_salaries_com,
+          production_overhead_salaries_trn,
+          production_overhead_salaries_est,
+          production_overhead_salaries_sls,
+          production_overhead_salaries_vacation,
+          production_overhead_salaries_sickness,
+          production_overhead_salaries_other,
+          batch_id,
+          department_id,
+          project_type,
+          taxes,
+          insurance
+        FROM finance_l2.fact_finance_reports_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};
+
+        INSERT INTO finance_l2.fact_revenue_reports(
+          [date],
+          df,
+          [type],
+          project_id,
+          total_revenue,
+          income_hrs,
+          income_costs,
+          income_prepayment,
+          income_prepayment_taken,
+          income_prepayment_offset,
+          income_vm,
+          total_direct_costs,
+          negative_cash_flow,
+          blbl,
+          non_blbl,
+          est_effort,
+          bonuses, gross_margin,
+          total_indirect_costs,
+          bonuses_common_projects,
+          other_expenses,
+          ebit,
+          billed_hours_invoiced,
+          billed_hours_ets,
+          total_available_hours,
+          fte,
+          batch_id,
+          total_revenue_awg_excl_prepayment,
+          income_discount,
+          income_external_referral_fee,
+          department_id,
+          ebit_comparable,
+          total_revenue_comparable,
+          reference_fee,
+          gross_margin_comparable,
+          project_type,
+          other_expenses_office_rent,
+          other_expenses_other_office_expenses,
+          other_expenses_communication_expenses,
+          other_expenses_cost_accounted_equipment,
+          other_expenses_training,
+          other_expenses_entertainment_personnel,
+          other_expenses_social_package,
+          other_expenses_travel_costs,
+          other_expenses_advertising_pr,
+          other_expenses_external_services,
+          other_expenses_depreciation,
+          other_expenses_vacation_accruals,
+          other_expenses_bad_depts,
+          other_expenses_other,
+          income_hosted_all,
+          income_hosted_invoiced,
+          income_hosted_salary,
+          income_hosted_costs
+          )
+        SELECT [date],
+          CAST([date] AS DATE) AS df,
+          [type],
+          project_id,
+          total_revenue,
+          income_hrs,
+          income_costs,
+          income_prepayment,
+          income_prepayment_taken,
+          income_prepayment_offset,
+          income_vm,
+          total_direct_costs,
+          negative_cash_flow,
+          blbl,
+          non_blbl,
+          est_effort,
+          bonuses,
+          gross_margin,
+          total_indirect_costs,
+          bonuses_common_projects,
+          other_expenses, 
+          ebit,
+          billed_hours_invoiced,
+          billed_hours_ets,
+          total_available_hours,
+          fte,
+          batch_id,
+          total_revenue_awg_excl_prepayment,
+          income_discount,
+          income_external_referral_fee,
+          department_id,
+          ebit_comparable,
+          total_revenue_comparable,
+          reference_fee,
+          gross_margin_comparable,
+          project_type,
+          other_expenses_office_rent,
+          other_expenses_other_office_expenses,
+          other_expenses_communication_expenses,
+          other_expenses_cost_accounted_equipment,
+          other_expenses_training,
+          other_expenses_entertainment_personnel,
+          other_expenses_social_package,
+          other_expenses_travel_costs,
+          other_expenses_advertising_pr,
+          other_expenses_external_services,
+          other_expenses_depreciation,
+          other_expenses_vacation_accruals,
+          other_expenses_bad_depts,
+          other_expenses_other,
+          income_hosted_all,
+          income_hosted_invoiced,
+          income_hosted_salary,
+          income_hosted_costs
+        FROM finance_l2.fact_finance_reports_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

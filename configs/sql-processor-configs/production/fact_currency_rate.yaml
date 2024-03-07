@@ -1,0 +1,42 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - commons_l3.fact_nbu_currency_rate
+  queries:
+    - description: copy new batch of data to latest
+      staging-table: commons_l3.fact_nbu_currency_rate_staging
+      partition-column: batch_id
+      sql: |
+
+        -- delete from latest table  currency rates to rewrite with new ones
+        DELETE FROM commons_l3.fact_nbu_currency_rate
+        WHERE [date] in (SELECT DISTINCT [date] FROM commons_l3.fact_nbu_currency_rate_staging A
+                          WHERE {BATCH_HIGH_LOW_FILTER})
+
+        INSERT INTO commons_l3.fact_nbu_currency_rate (
+        	date, df,
+        	multiplier,
+        	rate,
+        	currency_id,
+        	batch_id
+        )
+        SELECT
+        	C.date,
+            CAST(C.date AS DATE) AS df,
+        	C.multiplier,
+        	C.rate,
+        	C.id as currency_id,
+        	C.batch_id
+        FROM (
+        	SELECT
+        		A.date,
+        		A.multiplier,
+        		A.rate,
+        		A.batch_id,
+        		B.id
+        	FROM commons_l3.fact_nbu_currency_rate_staging A
+        	INNER JOIN commons_l3.dim_nbu_currencies_latest B
+        	ON A.currency_code_l = B.name
+        	WHERE {BATCH_HIGH_LOW_FILTER}
+        ) C;

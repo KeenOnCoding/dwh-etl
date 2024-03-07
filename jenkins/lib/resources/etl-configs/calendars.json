@@ -1,0 +1,51 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "calendar-id-ingestion",
+            "target_table": "resourcing_l3.calendars_staging",
+            "user_table":"resourcing_l3.fact_working_hours",
+            "partition_columns": "batch_id",
+            "date_format": "%Y-%m-%d",
+            "from_to_params_names": ["dateFrom","dateTo"]
+        },
+        "auth": {
+              "auth_strategy": "OAUTH2",
+              "auth_url": "https://api.i.sigmaukraine.com:8243/oauth2/token",
+              "client_id": "${CLIENT_ID}",
+              "client_secret": "${CLIENT_SECRET}",
+              "scope": "workingcalendars_read"
+            },
+        "fetching_strategy": {
+            "fetching_strategy": "INCREMENTAL",
+            "incremental": {
+                "incremental_strategy": "BACKFILL",
+                "general": {
+                    "batch_window": 1,
+                    "granularity": "months",
+                    "default_partition_value": "2010-01-01 00:00:00",
+                    "align_dates": true,
+                    "date_from_time_offset": -15,
+                    "date_column": "date"
+                },
+                "backfill":{
+                    "backfill_upper_offset": 12,
+                    "backfill_max_ranges_per_run": 36,
+                    "backfill_left_bound_kick_forward": "1 day"
+                }
+            }
+        },
+        "enrichers":{
+            "stringify_json_columns": ["dates"],
+            "track_db_schema": true
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "api_url": "https://api.i.sigmaukraine.com:8244/workingcalendars"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id" : "dim_calendars_latest"
+        }
+    }
+}

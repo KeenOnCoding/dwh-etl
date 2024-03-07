@@ -1,0 +1,34 @@
+{
+  "ingestion": {
+    "general": {
+      "job_name": "bad-debt-ingestion",
+      "target_table": "finance_l2.dim_bad_debt_staging",
+      "partition_columns": "version"
+    },
+    "auth": {
+      "auth_strategy": "OAUTH2",
+      "auth_url": "https://vm-tex-01:8243/token",
+      "client_id": "${CLIENT_ID}",
+      "client_secret": "${CLIENT_SECRET}"
+    },
+    "fetching_strategy": {
+      "fetching_strategy": "SNAPSHOT"
+    },
+    "data_manager": {
+      "track_hash_sum": true,
+      "hash_sum_response_key": "version",
+      "hash_sum_table": "dbo.util_hash_sum_storage"
+    },
+    "data_source": {
+      "data_source": "GENERIC-REST",
+      "data_response_key": "data",
+      "api_url": "https://vm-tex-01:8243/1c/finapi/v2/bad_debt",
+      "extra_params": "${EXTRA_PARAMS}"
+    }
+  },
+  "processing": {
+    "sql_processor": {
+      "plan_id" : "dim_bad_debt_latest"
+    }
+  }
+}

@@ -1,0 +1,57 @@
+query-plan:
+  tables:
+    table_names:
+      - :TARGET_TABLE
+  variables:
+    TABLES_TO_REWRITE:
+      - :TARGET_TABLE
+  queries:
+    - description: copy positions from staging
+      sql: |
+        INSERT INTO :TARGET_TABLE (
+            [date], df, employee_id, country_id,
+        	city_id, department_id, category_id,
+        	is_contractor, position_id, [status],
+            is_reduction, attrition, type,
+            reason_extended_leave_id
+        )
+        SELECT date AS [date],
+            CAST(date AS DATE) AS df,
+        	employee_id,
+        	country_id,
+        	city_id,
+        	department_id,
+        	category_id,
+        	is_contractor,
+        	position_id,
+        	[status],
+            is_reduction,
+            attrition,
+            type,
+            reason_extended_leave_id
+        FROM (
+        	SELECT A.date,
+        		B.employee_id,
+                B.country_id,
+        	    B.city_id,
+        		B.department_id,
+        		B.category_id,
+        		B.is_contractor,
+        		B.position_id,
+        		B.[status],
+                B.is_reduction,
+                B.attrition,
+                B.type,
+                B.reason_extended_leave_id,
+        		ROW_NUMBER() OVER (
+        			PARTITION BY B.employee_id,
+        			A.date ORDER BY B.[date] DESC -- order by date in descending manner meaning taking latest records of the partition in the first place
+        			) rn
+        	FROM (
+        		SELECT DISTINCT date
+        		FROM resourcing_l3.fact_working_hours 
+        		WHERE CAST(date AS DATE) <= EOMONTH(SYSDATETIME())
+        		) A -- limit joining expected hours by the end of current month
+        	JOIN :CHANGE_STATE_TABLE B ON B.DATE <= DATETIMEFROMPARTS(YEAR(A.date), MONTH(A.date), DAY(A.date), 23, 59, 59, 59) -- create datetime with filled minutes, hours, seconds and microseconds
+        	) D
+        WHERE D.rn = 1

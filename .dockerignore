@@ -1,0 +1,17 @@
+# ignore all scripts
+**/*.sh
+# except run scripts that are used in dockerfile
+!run-scripts/**/*.sh
+
+.gitignore
+**/*.md
+
+.pytest_cache
+pylintrc
+Makefile
+
+**/__pycache__
+requirements.txt
+
+tests/
+jenkins/

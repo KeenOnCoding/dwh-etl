@@ -1,0 +1,52 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - commons_l3.dim_localizations_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - commons_l3.dim_localizations_latest
+  queries:
+    - description: copy from tmp
+      staging-table: commons_l3.dim_localizations_staging
+      partition-column: version
+      # TODO mapping with case should take place somewhere else in predictable place
+      sql: |
+        INSERT INTO commons_l3.dim_localizations_latest
+        SELECT version, id, name,
+          CASE
+            WHEN
+              dls.name = 'Sigma Software' 
+              OR dls.name = 'US' 
+            THEN
+              (SELECT id FROM commons_l3.dim_channels_latest
+                WHERE name = 'Sigma Software') 
+            WHEN
+              dls.name = 'Sigma Technology' 
+              OR dls.name = 'Sigma Technology Hungary' 
+            THEN
+              (SELECT id FROM commons_l3.dim_channels_latest
+                WHERE name = 'Sigma Technology') 
+            WHEN
+              dls.name = 'Danir' 
+            THEN
+              (SELECT id FROM commons_l3.dim_channels_latest
+                WHERE name = 'Danir AB') 
+            WHEN
+              dls.name = 'Holisticon' 
+            THEN
+              (SELECT id FROM commons_l3.dim_channels_latest
+                WHERE name = 'Holisticon AG') 
+            WHEN
+              dls.name = 'Sigma UK' 
+            THEN
+              (SELECT id FROM commons_l3.dim_channels_latest
+                WHERE name = 'Sigma UK')
+            WHEN
+              dls.name = 'CA localization' or dls.name = 'IdeaSoft' or dls.name = 'Sweden localization' or dls.name = 'UAE localization'
+            THEN
+              (SELECT id FROM commons_l3.dim_channels_latest
+                WHERE name = 'Sigma Software')
+          END AS channel_id 
+        FROM commons_l3.dim_localizations_staging dls
+        WHERE {BATCH_HIGH_LOW_FILTER};

@@ -1,0 +1,82 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - hr_l2.fact_hr_tool_risks
+  queries:
+    - description: delete records from join table, copy records to join table, copy risks from hr tool staging
+      staging-table: hr_l2.fact_hr_tool_risks_staging
+      partition-column: batch_id
+      sql: |
+        WITH ids_to_delete AS (
+          SELECT
+            id
+          FROM hr_l2.fact_hr_tool_risks_staging
+          WHERE {BATCH_HIGH_LOW_FILTER}
+        )
+
+        DELETE FROM hr_l2.fact_hr_tool_risks_reasons
+        WHERE risk_id IN (SELECT id FROM ids_to_delete);
+
+        WITH records_batch AS (
+          SELECT
+            id,
+            value reason_id,
+            batch_id
+          FROM hr_l2.fact_hr_tool_risks_staging
+          CROSS APPLY STRING_SPLIT(leave_reasons, ',')
+          WHERE {BATCH_HIGH_LOW_FILTER}
+        )
+
+        INSERT INTO
+          hr_l2.fact_hr_tool_risks_reasons (batch_id, risk_id, reason_id)
+        SELECT batch_id, id, reason_id
+        FROM records_batch;
+
+        WITH records_batch AS (
+          SELECT
+            id,
+            staff_member_id,
+            impact_level,
+            probability_level,
+            exposure,
+            is_closed,
+            responsible_id,
+            supporter_id,
+            created_by,
+            updated_by,
+            created,
+            updated_at,
+            batch_id
+          FROM hr_l2.fact_hr_tool_risks_staging
+          WHERE {BATCH_HIGH_LOW_FILTER}
+        )
+
+        MERGE hr_l2.fact_hr_tool_risks AS [Target] USING (
+        SELECT
+          *
+        FROM
+          records_batch
+        ) AS [Source]
+        ON ([Target].id = [Source].id)
+        WHEN MATCHED THEN
+        UPDATE SET
+          [Target].id = [Source].id,
+          [Target].staff_member_id = [Source].staff_member_id,
+          [Target].impact_level = [Source].impact_level,
+          [Target].probability_level = [Source].probability_level,
+          [Target].exposure = [Source].exposure,
+          [Target].is_closed = [Source].is_closed,
+          [Target].responsible_id = [Source].responsible_id,
+          [Target].supporter_id = [Source].supporter_id,
+          [Target].created_by = [Source].created_by,
+          [Target].updated_by = [Source].updated_by,
+          [Target].created = [Source].created,
+          [Target].updated_at = [Source].updated_at,
+          [Target].batch_id = [Source].batch_id
+        WHEN NOT MATCHED THEN
+        INSERT
+        VALUES ([Source].id, [Source].staff_member_id, [Source].impact_level, [Source].probability_level,
+          [Source].exposure, [Source].is_closed,  [Source].responsible_id, [Source].supporter_id,
+          [Source].created_by, [Source].updated_by, [Source].created, [Source].updated_at,
+          [Source].batch_id);

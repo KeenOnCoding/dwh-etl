@@ -1,0 +1,38 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "dismissal-statistics-ingestion",
+            "target_table": "hr_l2.fact_staff_member_dismissal_statistics_staging",
+            "partition_columns": "version"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "SNAPSHOT"
+        },
+        "enrichers": {
+            "field_mapping":
+                [
+                    {
+                        "from": "employee_id",
+                        "to": "staff_member_id"
+                    }
+                ]
+            },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "data_response_key": "data",
+            "extra_params": "${EXTRA_PARAMS}",
+            "api_url": "https://vm-tex-01:8243/1c/finapi/v2/dismissal_statistics"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id": "fact_staff_member_dismissal_statistics"
+        }
+    }
+}

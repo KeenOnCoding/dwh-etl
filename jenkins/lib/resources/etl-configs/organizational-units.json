@@ -1,0 +1,48 @@
+{
+  "ingestion": {
+    "general": {
+      "job_name": "organizational-units-ingestion",
+      "target_table": "commons_l3.dim_organizational_units_staging",
+      "partition_columns": "version"
+    },
+    "auth": {
+      "auth_strategy": "OAUTH2",
+      "auth_url": "https://api.i.sigmaukraine.com:8243/oauth2/token",
+      "client_id": "${CLIENT_ID_V2}",
+      "client_secret": "${CLIENT_SECRET_V2}"
+    },
+    "fetching_strategy": {
+      "fetching_strategy": "SNAPSHOT"
+    },
+    "enrichers": {
+      "stringify_json_columns": [
+        "manager"
+      ],
+      "track_db_schema": true,
+      "field_mapping": [
+        {
+          "from": "parentUnitId",
+          "to": "parent_unit_id"
+        },
+        {
+          "from": "unitType",
+          "to": "unit_type"
+        },
+        {
+          "from": "businessPartnerId",
+          "to": "business_partner_id"
+        }
+      ]
+    },
+    "data_source": {
+      "data_source": "GENERIC-REST",
+      "data_response_key": "organizationalUnits",
+      "api_url": "https://api.sigma.software/organizational-units/1.0.0/"
+    }
+  },
+  "processing": {
+    "sql_processor": {
+      "plan_id": "dim_organizational_units_latest"
+    }
+  }
+}

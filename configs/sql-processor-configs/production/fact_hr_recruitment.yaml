@@ -1,0 +1,47 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - hr_l3.fact_recruitment
+  queries:
+    - description: copy recruitment from staging
+      staging-table: hr_l3.fact_recruitment_staging
+      partition-column: batch_id
+      sql: |
+        INSERT INTO hr_l3.fact_recruitment(
+          id,
+          [date],
+          department_id,
+          position_id,
+          technology_id,
+          city_id,
+          start_date,
+          start_df,
+          request_close_date,
+          request_close_df,
+          request_date,
+          request_df,
+          candidate_level,
+          vacancy_level,
+          employee_status,
+          candidate_name,
+          batch_id)
+        SELECT id,
+          [date],
+          department_id,
+          position_id,
+          technology_id,
+          city_id,
+          start_date,
+          CAST(start_date AS DATE) AS start_df,
+          request_close_date,
+          CAST(request_close_date AS DATE) AS request_close_df,
+          request_date,
+          CAST(request_date AS DATE) AS request_df,
+          candidate_level,
+          vacancy_level,
+          employee_status,
+          candidate_name,
+          batch_id
+        FROM hr_l3.fact_recruitment_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

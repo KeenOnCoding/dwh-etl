@@ -1,0 +1,31 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - finance_l1.fact_bank_operations_staging
+  queries:
+    - description: copy bank operations from staging
+      staging-table: finance_l1.fact_bank_operations_staging
+      partition-column: batch_id
+      sql: |
+        BEGIN TRANSACTION [tran]
+        BEGIN TRY
+
+          -- remove old records within the same date in latest table
+          DELETE FROM finance_l1.fact_bank_operations
+          WHERE CAST([date] as DATE) in
+            (SELECT DISTINCT CAST([date] as DATE)
+              FROM finance_l1.fact_bank_operations_staging
+              WHERE {BATCH_HIGH_LOW_FILTER})
+
+          INSERT INTO finance_l1.fact_bank_operations
+          SELECT
+              *
+          FROM finance_l1.fact_bank_operations_staging as operations
+          WHERE {BATCH_HIGH_LOW_FILTER};
+          COMMIT TRANSACTION [tran]
+        END TRY
+        BEGIN CATCH
+          ROLLBACK TRANSACTION [tran]
+        END CATCH
+

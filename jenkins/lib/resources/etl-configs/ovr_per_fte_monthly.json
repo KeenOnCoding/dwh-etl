@@ -1,0 +1,32 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "ovr-per-fte-monthly-ingestion",
+            "target_table": "finance_l2.fact_ovr_per_fte_monthly_staging",
+            "partition_columns": "batch_id"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "SNAPSHOT"
+        },
+        "enrichers": {
+            "track_db_schema": true
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "data_response_key": "data",
+            "extra_params": "${EXTRA_PARAMS}",
+            "api_url": "https://vm-tex-01:8243/1c/finapi/v2/oh_per_fte"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id": "fact_ovr_per_fte_monthly"
+        }
+    }
+}

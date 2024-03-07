@@ -1,0 +1,28 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "hr-tool-skills-ingestion",
+            "target_table": "hr_l2.dim_hr_tool_skill_staging",
+            "partition_columns": "version"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "SNAPSHOT"
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "data_response_key": "data",
+            "api_url": "https://vm-tex-01:8243/hr_tool/Skills"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id": "dim_hr_tool_skill"
+        }
+    }
+}

@@ -1,0 +1,112 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "employee-v2-dimension-ingestion",
+            "target_table": "commons_l3.dim_employees_v2_staging",
+            "partition_columns": "version"
+        },
+        "auth": {
+              "auth_strategy": "OAUTH2",
+              "auth_url": "https://api.i.sigmaukraine.com:8243/oauth2/token",
+              "client_id": "${CLIENT_ID_V2}",
+              "client_secret": "${CLIENT_SECRET_V2}"
+            },
+        "fetching_strategy": {
+            "fetching_strategy": "SNAPSHOT"
+        },
+        "enrichers": {
+            "track_db_schema": false,
+            "stringify_json_columns": ["contracting_country_codes"],
+            "field_mapping":
+                  [
+                      {
+                        "from": "personnelNumber",
+                        "to": "personnel_number"
+                      },
+                      {
+                          "from": "firstName",
+                          "to": "first_name"
+                      },
+                      {
+                          "from": "lastName",
+                          "to": "last_name"
+                      },
+                      {
+                          "from": "resourceManagerId",
+                          "to": "resource_manager_id"
+                      },
+                      {
+                          "from": "countryCode",
+                          "to": "country_code"
+                      },
+                      {
+                          "from": "organizationalUnitId",
+                          "to": "organizational_unit_id"
+                      },
+                      {
+                          "from": "employmentDate",
+                          "to": "employment_date"
+                      },
+                      {
+                          "from": "terminationDate",
+                          "to": "termination_date"
+                      },
+                      {
+                          "from": "employmentDuration",
+                          "to": "employment_duration"
+                      },
+                      {
+                          "from": "priorEmploymentExperience",
+                          "to": "prior_employment_experience"
+                      },
+                      {
+                          "from": "employmentStatus",
+                          "to": "employment_status"
+                      },
+                      {
+                          "from": "contractingCountryCode",
+                          "to": "contracting_country_code"
+                      },
+                      {
+                          "from": "contractingCountryCodes",
+                          "to": "contracting_country_codes"
+                      },
+                      {
+                          "from": "managerId",
+                          "to": "manager_id"
+                      },
+                      {
+                          "from": "positionId",
+                          "to": "position_id"
+                      },
+                      {
+                          "from": "hrId",
+                          "to": "hr_id"
+                      },
+                      {
+                          "from": "personId",
+                          "to": "person_id"
+                      },
+                      {
+                          "from": "accountantId",
+                          "to": "accountant_id"
+                      },
+                      {
+                          "from": "displayName",
+                          "to": "display_name"
+                      }
+                  ]
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "data_response_key": "employees",
+            "api_url": "https://api.sigma.software/employees/1.0.0",
+            "extra_params": "offset=0&limit=10000"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id" : "dim_employees_v2_latest"
+        }
+    }
+}

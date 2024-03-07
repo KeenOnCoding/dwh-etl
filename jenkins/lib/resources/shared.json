@@ -1,0 +1,20 @@
+{
+  "shared": {
+    "env": "${ENV}",
+    "dwh_host": "${DWH_HOST}",
+    "dwh_db": "${DWH_DB}",
+    "dwh_user": "${DWH_USER}",
+    "db_pass": "${DATABASE_PASS}",
+    "suppress_prometheus": "${SUPPRESS_PROMETHEUS}",
+    "build_number": "${BUILD_NUMBER}",
+    "build_url": "${BUILD_URL}"
+  },
+  "ingestion": {
+    "api_key": "${API_KEY}",
+    "failed_job_metric": "dwh_data_failed_job_v1",
+    "in_total_metric": "dwh_data_in_total_v1",
+    "out_total_metric": "dwh_data_out_total_v1"
+  }
+}
+
+

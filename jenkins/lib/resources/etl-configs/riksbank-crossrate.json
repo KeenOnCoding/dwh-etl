@@ -1,0 +1,16 @@
+{
+  "processing": {
+    "riksbank_crossrate_processor": {
+      "riksbank_currencies_target_table": "commons_l3.fact_riksbank_currency_crossrate_staging",
+      "riksbank_currencies_latest_table": "commons_l3.fact_riksbank_currency_crossrate",
+      "observation_url": "https://api.riksbank.se/swea/v1/Observations",
+      "crossrate_url": "https://api.riksbank.se/swea/v1/CrossRates",
+      "currency_codes_source_table": "commons_l3.dim_riksbank_currency_codes_latest",
+      "default_partition_value": "2019-01-01",
+      "sleep_duration": 13
+    },
+    "sql_processor": {
+      "plan_id": "fact_riksbank_currency_crossrate"
+    }
+  }
+}

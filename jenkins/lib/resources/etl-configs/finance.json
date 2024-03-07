@@ -1,0 +1,67 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "finance-reports-ingestion",
+            "target_table": "finance_l2.fact_finance_reports_staging",
+            "user_table": "finance_l2.fact_salary_reports",
+            "date_format": "%d.%m.%Y",
+            "from_to_params_names": ["datefrom","dateto"],
+            "partition_columns": "batch_id"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "INCREMENTAL",
+            "incremental": {
+                "incremental_strategy": "BACKFILL",
+                "general": {
+                    "batch_window": 0,
+                    "align_dates": true,
+                    "date_column": "[date]",
+                    "granularity": "months",
+                    "default_partition_value": "2021-01-01 00:00:00"
+                },
+                "backfill": {
+                    "backfill_upper_offset": 12
+                }
+            }
+        },
+        "enrichers": {
+            "track_db_schema": true,
+            "field_mapping":
+                [
+                    {
+                        "from": "discount",
+                        "to": "income_discount"
+                    },
+                    {
+                        "from": "external_reference_fee",
+                        "to": "income_external_referral_fee"
+                    }
+                ]
+        },
+        "data_manager": {
+            "date_manager_mode":"SUBSTITUTE",
+            "data_manager_window": "2-month-ago",
+            "hash_sum_checker_impl": "1C",
+            "track_hash_sum": true,
+            "hash_sum_response_key": "version",
+            "hash_sum_table": "dbo.util_hash_sum_storage"
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "api_url": "https://vm-tex-01:8243/1c/finapi/v2/accountreportdata",
+            "extra_params": "${EXTRA_PARAMS}",
+            "data_response_key": "data"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id" : "fact_revenue_salary_reports"
+        }
+    }
+}

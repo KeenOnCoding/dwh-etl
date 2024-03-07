@@ -1,0 +1,30 @@
+{
+  "processing": {
+    "history_processor": {
+      "history_table": "commons_l3.dim_ets_users_history",
+      "staging_table": "commons_l3.dim_ets_users_staging",
+      "history_req_field_mappings":
+      [
+        {
+            "from": "id",
+            "to": "user_code"
+        },
+        {
+            "from": "hashsum",
+            "to": "hash_sum"
+        }
+      ],
+      "staging_req_field_mappings":
+      [
+        {
+            "from": "id",
+            "to": "user_code"
+        },
+        {
+            "from": "hashsum",
+            "to": "hash_sum"
+        }
+      ]
+    }
+  }
+}

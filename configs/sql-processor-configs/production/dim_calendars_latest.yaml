@@ -1,0 +1,92 @@
+query-plan:
+  tables:
+    table_names:
+      - resourcing_l3.dim_calendars
+      - resourcing_l3.fact_working_hours
+  queries:
+    - description: extract calendar`s ids and names and extract expected hours from staging table
+      staging-table: resourcing_l3.calendars_staging
+      partition-column: batch_id
+      auto-cleanup:
+        - "#calendars"
+      sql: |
+        --  resourcing_l3.dim_calendars:
+        
+        MERGE resourcing_l3.dim_calendars AS [Target]
+        USING (
+        	SELECT batch_id, id, name FROM (
+              SELECT batch_id, id, name,
+                    ROW_NUMBER() OVER (
+                    PARTITION BY id ORDER BY batch_id DESC
+                    ) b_id
+              FROM resourcing_l3.calendars_staging WHERE {BATCH_HIGH_LOW_FILTER}
+          ) A
+          WHERE A.b_id = 1
+        ) AS [Source]
+        ON([Target].id = [Source].id)
+        WHEN MATCHED
+        THEN
+          UPDATE
+          SET [Target].batch_id = [Source].batch_id,
+              [Target].id = [Source].id,
+              [Target].name = [Source].name
+        WHEN NOT MATCHED
+          THEN
+            INSERT
+            VALUES (
+              [Source].batch_id,
+              [Source].id,
+              [Source].name
+            );
+        
+        WITH calendars
+        AS(
+          SELECT CT.batch_id, CT.id, CT.name,
+          JSON_VALUE(dates.value, '$.date')  AS date,
+          JSON_VALUE(dates.value, '$.workingHours') AS working_hours
+          FROM resourcing_l3.calendars_staging as CT  --CT- calendars table
+          CROSS APPLY OPENJSON(dates) as dates 
+          WHERE {BATCH_HIGH_LOW_FILTER}
+        )
+        SELECT 
+          *
+        INTO #calendars
+        FROM calendars
+        
+        MERGE resourcing_l3.fact_working_hours AS [Target]
+        USING(
+        	SELECT batch_id, id, date,
+                   working_hours FROM (
+              SELECT batch_id, id, date, working_hours,
+                ROW_NUMBER() OVER (
+                PARTITION BY date, id ORDER BY batch_id DESC
+                ) b_id
+              FROM #calendars
+            ) A
+            WHERE A.b_id = 1
+        ) AS [Source]
+        ON([Target].calendar_id = [Source].id AND [Target].date = [Source].date)
+        WHEN MATCHED
+        THEN
+          UPDATE
+          SET [Target].batch_id = [Source].batch_id,
+              [Target].calendar_id = [Source].id,
+              [Target].date = [Source].date,
+              [Target].df = [Source].date,
+              [Target].working_hours = [Source].working_hours
+        WHEN NOT MATCHED
+          THEN
+            INSERT (
+              batch_id,
+              calendar_id,
+              date,
+              df,
+              working_hours
+            )
+            VALUES (
+              [Source].batch_id,
+              [Source].id,
+              [Source].date,
+              [Source].date,
+              [Source].working_hours
+            );

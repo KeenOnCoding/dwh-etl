@@ -1,0 +1,62 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - hr_l2.fact_hr_tool_f2f
+  queries:
+    - description: copy f2f from hr tool staging
+      staging-table: hr_l2.fact_hr_tool_f2f_staging
+      partition-column: batch_id
+      sql: |
+        WITH records_batch AS (
+          SELECT
+            id,
+            staff_member_id,
+            status,
+            employee_satisfaction_type_id,
+            performance_level,
+            potential_level,
+            is_key,
+            meeting_type_id,
+            is_sensitive,
+            created_by,
+            updated_by,
+            created,
+            updated_at,
+            deleted_at,
+            batch_id
+          FROM hr_l2.fact_hr_tool_f2f_staging
+          WHERE {BATCH_HIGH_LOW_FILTER}
+        )
+
+        MERGE hr_l2.fact_hr_tool_f2f AS [Target] USING (
+        SELECT
+          *
+        FROM
+          records_batch
+        ) AS [Source]
+        ON ([Target].id = [Source].id)
+        WHEN MATCHED THEN
+        UPDATE SET
+          [Target].id = [Source].id,
+          [Target].staff_member_id = [Source].staff_member_id,
+          [Target].status = [Source].status,
+          [Target].employee_satisfaction_type_id = [Source].employee_satisfaction_type_id,
+          [Target].performance_level = [Source].performance_level,
+          [Target].potential_level = [Source].potential_level,
+          [Target].is_key = [Source].is_key,
+          [Target].meeting_type_id = [Source].meeting_type_id,
+          [Target].is_sensitive = [Source].is_sensitive,
+          [Target].created_by = [Source].created_by,
+          [Target].updated_by = [Source].updated_by,
+          [Target].created = [Source].created,
+          [Target].updated_at = [Source].updated_at,
+          [Target].deleted_at = [Source].deleted_at,
+          [Target].batch_id = [Source].batch_id
+        WHEN NOT MATCHED THEN
+        INSERT
+        VALUES ([Source].id, [Source].staff_member_id, [Source].status,
+          [Source].employee_satisfaction_type_id, [Source].performance_level,
+          [Source].potential_level, [Source].is_key, [Source].meeting_type_id, [Source].is_sensitive,
+          [Source].created_by, [Source].updated_by, [Source].created, [Source].updated_at, [Source].deleted_at,
+          [Source].batch_id);

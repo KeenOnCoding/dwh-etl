@@ -1,0 +1,73 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - resourcing_l3.dim_sr_jobs_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - resourcing_l3.dim_sr_jobs_latest
+      - resourcing_l3.fact_sr_job_hiring_manager
+  queries:
+    - description: copy jobs from staging
+      staging-table: resourcing_l3.dim_sr_jobs_staging~A
+      partition-column: version
+      sql: |
+        INSERT INTO resourcing_l3.dim_sr_jobs_latest(
+          job_id,
+          department_id,
+          job_title,
+          number_of_positions,
+          job_creation_date,
+          job_status,
+          type_of_employment,
+          priority,
+          version,
+          fake_vacancy)
+        SELECT A.job_id,
+          B.id department_id,
+          A.job_title,
+          A.number_of_positions,
+          A.job_creation_date,
+          A.job_status,
+          A.type_of_employment,
+          A.priority,
+          A.version,
+          A.fake_vacancy
+        FROM resourcing_l3.dim_sr_jobs_staging A
+        LEFT JOIN commons_l3.dim_departments_latest B
+        ON lower(A.department_org_field_value) = lower(B.name)
+        WHERE {BATCH_HIGH_LOW_FILTER};
+
+        WITH exploded_job_hiring_manager (job_id, hm_name_surname, hiring_managers) AS
+        ( -- it's a very odd and scary way to recursively split hiring_managers field
+          SELECT
+            job_id,
+            CONVERT(VARCHAR(300), TRIM(LEFT(hiring_managers, CHARINDEX(',', hiring_managers + ',') - 1))),
+            CONVERT(VARCHAR(300), TRIM(STUFF(hiring_managers, 1, CHARINDEX(',', hiring_managers + ','), '')))
+          FROM resourcing_l3.dim_sr_jobs_staging A
+          WHERE {BATCH_HIGH_LOW_FILTER}
+          UNION ALL
+          SELECT
+            job_id,
+            CONVERT(VARCHAR(300), TRIM(LEFT(hiring_managers, CHARINDEX(',', hiring_managers + ',') - 1))),
+            CONVERT(VARCHAR(300), TRIM(STUFF(hiring_managers, 1, CHARINDEX(',', hiring_managers + ','), '')))
+          FROM exploded_job_hiring_manager
+          WHERE
+            hiring_managers > ''
+        ),
+        job_hr_name_surname (job_id, first_name, last_name) AS
+        (
+          SELECT
+            job_id,
+            PARSENAME(REPLACE(hm_name_surname, ' ', '.'), 2) AS first_name,
+            PARSENAME(REPLACE(hm_name_surname, ' ', '.'), 1) as last_name
+          FROM exploded_job_hiring_manager
+        )
+        INSERT INTO resourcing_l3.fact_sr_job_hiring_manager
+        SELECT
+          job_id,
+          id AS hiring_manager_id
+        FROM job_hr_name_surname as hrns
+        LEFT JOIN commons_l3.dim_employees_latest del
+        ON hrns.first_name = del.first_name and hrns.last_name = del.last_name
+        WHERE del.id IS NOT NULL;

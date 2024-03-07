@@ -1,0 +1,32 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "reasons-extended-leave-ingestion",
+            "target_table": "commons_l3.dim_reason_extended_leave_staging",
+            "partition_columns": "version"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "SNAPSHOT"
+        },
+        "enrichers": {
+            "track_db_schema": true,
+            "hash_column": "",
+            "have_hash_sum": ""
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "api_url": "https://vm-tex-01:8243/1c/api/v2/reasons_extended_leave"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id": "dim_reasons_extended_leave"
+        }
+    }
+}

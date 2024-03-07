@@ -1,0 +1,47 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - dbo.util_fact_time_reports_removed_records_v2
+  queries:
+    - description: delete time reports that were removed from the ETS
+      sql: |
+        SELECT id
+        INTO #ID_FOR_REMOVAL
+        FROM dbo.util_fact_time_reports_removed_records_v2
+        WHERE modification_date <= (
+        		SELECT MIN(modification_date)
+        		FROM (
+        			SELECT MAX(modification_date) AS modification_date
+        			FROM resourcing_l3.fact_time_reports_v2
+
+        			UNION
+
+        			SELECT MAX(modification_date) AS modification_date
+        			FROM resourcing_l3.fact_time_reports_daily_v2
+        			) A
+        		)
+        	AND is_processed = 0;
+
+        UPDATE resourcing_l3.fact_time_reports_v2
+        SET deleted = 1
+        WHERE id IN (
+        		SELECT id
+        		FROM #ID_FOR_REMOVAL
+        		);
+
+
+        UPDATE resourcing_l3.fact_time_reports_daily_v2
+        SET deleted = 1
+        WHERE id IN (
+        		SELECT id
+        		FROM #ID_FOR_REMOVAL
+        		);
+
+
+        UPDATE dbo.util_fact_time_reports_removed_records_v2
+        SET is_processed = 1
+        WHERE id IN (
+        		SELECT id
+        		FROM #ID_FOR_REMOVAL
+        		);

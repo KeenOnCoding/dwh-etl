@@ -1,0 +1,117 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - hr_l2.fact_hr_tool_smart_goal
+  queries:
+    - description: process hr tool smart goals data
+      staging-table: hr_l2.fact_hr_tool_smart_goal_staging
+      partition-column: batch_id
+      auto-cleanup:
+        - "#LATEST_SMART_GOALS"
+      sql: |
+        SELECT *
+        INTO #LATEST_SMART_GOALS
+        FROM (
+        	SELECT *
+        	FROM (
+        		SELECT *,
+        			ROW_NUMBER() OVER (
+        				PARTITION BY id ORDER BY updated_at DESC
+        				) AS row_num
+        		FROM hr_l2.fact_hr_tool_smart_goal_staging
+        		WHERE {BATCH_HIGH_LOW_FILTER}
+        		) A
+        	WHERE row_num = 1
+        	) B;
+
+        DELETE
+        FROM hr_l2.fact_hr_tool_smart_goal
+        WHERE id IN (
+        		SELECT id
+        		FROM #LATEST_SMART_GOALS
+        		);
+
+        DELETE
+        FROM hr_l2.fact_hr_tool_smart_goal_todo_list
+        WHERE smart_goal_id IN (
+        		SELECT id
+        		FROM #LATEST_SMART_GOALS
+        		);
+
+        INSERT INTO hr_l2.fact_hr_tool_smart_goal (
+        	batch_id,
+        	id,
+        	[order],
+        	roadmap_id,
+        	STATUS,
+        	due_date,
+        	title,
+        	skill,
+        	description,
+        	planned_activities,
+        	evaluation_criteria,
+        	outcomes,
+        	agreed_by,
+        	agreed_comment,
+        	agreed_at,
+        	accepted_by,
+        	accepted_comment,
+        	accepted_at,
+        	rejected_by,
+        	rejected_comment,
+        	rejected_at,
+        	canceled_by,
+        	canceled_comment,
+        	canceled_at,
+        	created_by,
+        	created_at,
+        	updated_by,
+        	updated_at,
+        	archived_by,
+        	archived_at
+        	)
+        SELECT batch_id,
+        	id,
+        	[order],
+        	roadmap_id,
+        	STATUS,
+        	due_date,
+        	title,
+        	skill,
+        	description,
+        	planned_activities,
+        	evaluation_criteria,
+        	outcomes,
+        	agreed_by,
+        	agreed_comment,
+        	agreed_at,
+        	accepted_by,
+        	accepted_comment,
+        	accepted_at,
+        	rejected_by,
+        	rejected_comment,
+        	rejected_at,
+        	canceled_by,
+        	canceled_comment,
+        	canceled_at,
+        	created_by,
+        	created_at,
+        	updated_by,
+        	updated_at,
+        	archived_by,
+        	archived_at
+        FROM #LATEST_SMART_GOALS;
+
+        INSERT INTO hr_l2.fact_hr_tool_smart_goal_todo_list (
+        	batch_id,
+        	smart_goal_id,
+        	checked,
+        	todo
+        	)
+        SELECT batch_id,
+        	id AS smart_goal_id,
+        	JSON_VALUE(value, '$.is_checked') AS checked,
+        	JSON_VALUE(value, '$.value') AS todo
+        FROM #LATEST_SMART_GOALS
+        CROSS APPLY OPENJSON(todo_list) A;

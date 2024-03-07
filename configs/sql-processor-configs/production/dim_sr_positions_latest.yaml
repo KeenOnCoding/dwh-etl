@@ -1,0 +1,73 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - resourcing_l3.dim_sr_positions_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - resourcing_l3.dim_sr_positions_latest
+  queries:
+    - description: copy positions from staging
+      staging-table: resourcing_l3.dim_sr_positions_staging
+      partition-column: version
+      sql: |
+        INSERT INTO resourcing_l3.dim_sr_positions_latest(
+          department_id,
+          position,
+          position_id,
+          level_of_vacancy,
+          customer_name,
+          project_id,
+          job_creation_date,
+          position_open_date,
+          position_target_start_date,
+          position_hire_date,
+          position_status,
+          job_status,
+          time_to_hire,
+          time_to_start,
+          job_approval_creator_first_and_last_name,
+          position_type,
+          type_of_employment,
+          job_id,
+          priority,
+          version,
+          position_creation_date,
+          technology,
+          additional_location_for_staffing,
+          framework,
+          fake_vacancy,
+          hiring_managers,
+          job_city)
+        SELECT A.department_org_field_value department_id,
+          A.position,
+          A.position_id,
+          A.level_of_vacancy,
+          A.customer_name,
+          A.project project_id,
+          A.job_creation_date,
+          A.position_open_date,
+          A.position_target_start_date,
+          A.position_hire_date,
+          A.position_status,
+          A.job_status,
+          A.time_to_hire,
+          A.time_to_start,
+          A.job_approval_creator_first_and_last_name,
+          A.position_type,
+          A.type_of_employment,
+          A.job_id,
+          A.priority,
+          A.version,
+          A.position_creation_date,
+          A.technology,
+          A.additional_location_for_staffing,
+          A.framework,
+          CASE
+            WHEN A.fake_vacancy = 'Yes' THEN 1
+            ELSE 0
+          END fake_vacancy,
+          A.hiring_managers,
+          A.job_city
+        FROM resourcing_l3.dim_sr_positions_staging A
+        WHERE {BATCH_HIGH_LOW_FILTER};

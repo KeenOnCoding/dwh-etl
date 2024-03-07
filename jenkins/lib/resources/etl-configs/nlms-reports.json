@@ -1,0 +1,15 @@
+{
+  "processing": {
+    "nlms_report_processor": {
+      "nlms_report_target_table": "lms_l3.extended_grade_report_staging",
+      "trigger_url": "https://courses.university.sigma.software/extension/api/generate_extended_grade_report/",
+      "check_status_url": "https://courses.university.sigma.software/extension/api/task_status/",
+      "on_prem_report_path": "/edx/var/edxapp/media/grades/",
+      "http_report_url": "https://courses.university.sigma.software/media/grades/",
+      "header_key": "${NLMS_KEY}"
+    },
+    "sql_processor": {
+      "plan_id": "nlms_extended_grade_report"
+    }
+  }
+}

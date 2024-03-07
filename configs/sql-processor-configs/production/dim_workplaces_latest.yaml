@@ -1,0 +1,65 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - commons_l3.dim_workplaces_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - commons_l3.dim_workplaces_latest
+  queries:
+    - description: copy from tmp
+      staging-table: commons_l3.dim_workplaces_staging
+      partition-column: version
+      sql: |
+        with W as 
+            (select version, id, name, square, parent_id, deletion_mark, number_of_workplaces ,
+            case when is_floor=1 then 'floor'
+                 when is_office=1 then 'office'
+                  when is_location=1 then 'location'
+                  else NULL
+            end [type],	--added one column instead of 3 to identify hierarchy level
+            city_id
+            from commons_l3.dim_workplaces_staging
+            where {BATCH_HIGH_LOW_FILTER})
+        insert into commons_l3.dim_workplaces_latest
+        select *
+        from (select A.version,
+            case when A.[type] is not null then null	--if hierarchy level is room, column [type] is null
+                else A.id end room_id,	--so if not null - it's not room
+            case when A.[type] is not null then null
+                else A.name end room_name,
+            case when A.[type]='floor' then A.id --if previous column is floor choose it
+                when B.[type]='location' or B.[type]='office' then null --if it is location or office skip it for this column
+                else B.id end floor_id,
+            case when A.[type]='floor' then A.name
+                when B.[type]='location' or B.[type]='office' then null
+                else B.name end as floor_name,
+            case when A.[type]='office' then A.id	--if one of previous is office, chose it
+                when B.[type]='office' then B.id
+                when C.[type]='location' then null	--if it's location, skip it for this column
+                else C.id end office_id,
+            case when A.[type]='office' then A.name
+                when B.[type]='office' then B.name
+                when C.[type]='location' then null
+                else C.name end office_name,
+            case when B.[type]='location' then B.id	--if one of previous is location, chose it
+                when C.[type]='location' then C.id
+                else D.id end location_id,
+            case when B.[type]='location' then B.name
+                when C.[type]='location' then C.name
+                else D.name end location_name,
+            A.square,
+            A.deletion_mark,
+            A.number_of_workplaces,
+            A.city_id
+            from W A				-- use 3 joins to connect all 3 levels of hierarchy to each other
+                left join W B
+                    on A.parent_id=B.id
+                left join W C
+                    on B.parent_id=C.id
+                left join W D
+                    on C.parent_id=D.id
+                where
+                (select max(id) from W 
+                    where W.parent_id=A.id) is null	--chose only those that begin from the lowest level of hierarchy
+        ) F ;

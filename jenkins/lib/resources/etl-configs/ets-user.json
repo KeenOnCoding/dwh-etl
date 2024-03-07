@@ -1,0 +1,75 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "ets-user-ingestion",
+            "target_table": "commons_l3.dim_ets_users_staging",
+            "partition_columns": "version"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "SNAPSHOT"
+        },
+        "enrichers": {
+            "track_db_schema": true,
+            "hash_column": "hash_sum",
+            "have_hash_sum": true,
+            "field_mapping":
+            [
+                {
+                    "from": "userCode",
+                    "to": "user_code"
+                },
+                {
+                    "from": "userDisplayName",
+                    "to": "user_display_name"
+                },
+                {
+                    "from": "linearManager",
+                    "to": "linear_manager"
+                },
+                {
+                    "from": "isContractor",
+                    "to": "is_contractor"
+                },
+                {
+                    "from": "isPartTime",
+                    "to": "is_part_time"
+                },
+                {
+                    "from": "isIntern",
+                    "to": "is_intern"
+                },
+                {
+                    "from": "calendarId",
+                    "to": "calendar_id"
+                },
+                {
+                    "from": "externalId",
+                    "to": "external_id"
+                },
+                {
+                    "from": "userId",
+                    "to": "user_id"
+                },
+                {
+                    "from": "linearManagerId",
+                    "to": "linear_manager_id"
+                }
+            ]
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "api_url": "https://vm-tex-01:8243/ets/report/effort/user"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id" : "dim_ets_users_latest"
+        }
+    }
+}

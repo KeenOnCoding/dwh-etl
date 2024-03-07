@@ -1,0 +1,42 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - resourcing_l3.fact_utilization_forecast_staging
+  queries:
+    - description: delete replaced data
+      staging-table: resourcing_l3.fact_utilization_forecast_staging
+      partition-column: batch_id
+      sql: |
+        DELETE FROM resourcing_l3.fact_utilization_forecast
+        WHERE [date] >= (
+          SELECT
+            MIN([date])
+          FROM
+            resourcing_l3.fact_utilization_forecast_staging
+          WHERE {BATCH_HIGH_LOW_FILTER}
+        );
+
+        -- copy resourcing_l3 utilization forecast from staging
+        INSERT INTO resourcing_l3.fact_utilization_forecast(
+          [date],
+          df,
+          [type],
+          owner_id,
+          employee_id,
+          project_id,
+          fte_bill,
+          fte_not_bill,
+          batch_id)
+        SELECT
+          [date],
+          CAST([date] AS DATE) AS df,
+          [type],
+          owner_id,
+          employee_id,
+          project_id,
+          fte_bill,
+          fte_not_bill,
+          batch_id
+        FROM resourcing_l3.fact_utilization_forecast_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

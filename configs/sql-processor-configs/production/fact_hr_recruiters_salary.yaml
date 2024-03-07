@@ -1,0 +1,26 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - hr_l2.fact_recruiters_salary_staging
+  queries:
+    - description: copy hr rectuiters salary from staging
+      staging-table: hr_l2.fact_recruiters_salary_staging
+      partition-column: batch_id
+      sql: |
+        INSERT INTO hr_l2.fact_recruiters_salary(
+          [date],
+          df,
+          recruiters_salary,
+          recruiters_bonuses,
+          external_bonuses,
+          batch_id)
+        SELECT
+          [date],
+          CAST([date] AS DATE) AS df,
+          recruiters_salary,
+          recruiters_bonuses,
+          external_bonuses,
+          batch_id
+        FROM hr_l2.fact_recruiters_salary_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

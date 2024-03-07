@@ -1,0 +1,110 @@
+rules:
+  - resourcing_l3:
+      default-partition-column: batch_id
+      default-threshold-value: 1hr
+      default-check-strategy: batch
+      allowed-prefixes:
+        - dim
+        - fact
+        - fact_utilization
+      allowed-postfixes:
+        - opportunity_staff_member
+        - technology_staff_member
+        - utilization_tool_data
+        - daily
+        - monthly
+      threshold-values-overrides:
+        - expected_hours: 31d
+        - time_reports_daily: 1d
+        - dim_sr: 1d
+      partition-column-overrides:
+        - dim_sr: version
+        - expected_hours_monthly: date
+        - expected_hours_daily: dt
+      check-strategy-overrides:
+        - expected_hours: date
+  - commons_l3:
+      default-partition-column: version
+      default-threshold-value: 1hr
+      default-check-strategy: batch
+      allowed-prefixes:
+        - dim
+        - fact
+      allowed-postfixes:
+        - latest
+        - change_history
+        - reports
+        - currency_rate
+      forbidden-prefixes:
+        - util_
+        - temp
+        - tmp
+      ignore-tables:
+        - channels
+      threshold-values-overrides:
+        - dim_currencies_latest: 1d
+        - fact_currency_rate: 1d
+      partition-column-overrides:
+        - fact_currency_rate: date
+      check-strategy-overrides:
+        - fact_currency_rate: date
+  - finance_l1:
+      default-partition-column: version
+      default-threshold-value: 1d
+      default-check-strategy: batch
+      allowed-prefixes:
+        - dim
+        - fact
+      forbidden-postfixes:
+        - staging
+        - history
+        - technology_groups
+        - technology_group_rates
+      partition-column-overrides:
+        - bank_operations: date
+        - employee_salary: period
+      check-strategy-overrides:
+        - bank_operations: date
+        - employee_salary: date
+      threshold-values-overrides:
+        - employee_salary: 60d
+  - hr_l3:
+      default-partition-column: version
+      default-threshold-value: 1hr
+      default-check-strategy: batch
+      allowed-prefixes:
+        - dim
+        - fact
+      allowed-postfixes:
+        - latest
+        - headcount
+      partition-column-overrides:
+        - fact_headcount: date
+      threshold-values-overrides:
+        - fact_headcount: 60d
+      check-strategy-overrides:
+        - fact_headcount: date
+  - hr_l2:
+      default-partition-column: date
+      default-threshold-value: 31d
+      default-check-strategy: date
+      allowed-prefixes:
+        - fact
+      allowed-postfixes:
+        - salary
+        - dismissal_statistics
+      threshold-values-overrides:
+        - recruiters_salary: 60d
+  - finance_l2:
+      default-partition-column: date
+      default-threshold-value: 1d
+      default-check-strategy: date
+      allowed-prefixes:
+        - fact
+      allowed-postfixes:
+        - revenue_reports
+        - salary_reports
+        - gm_extended_summary
+      threshold-values-overrides:
+        - revenue_reports: 60d
+        - salary_reports: 60d

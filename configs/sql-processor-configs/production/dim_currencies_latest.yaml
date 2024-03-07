@@ -1,0 +1,25 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - commons_l3.dim_nbu_currencies_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - commons_l3.dim_nbu_currencies_latest
+  queries:
+    - description: copy from tmp
+      staging-table: commons_l3.dim_nbu_currencies_staging
+      partition-column: version
+      sql: |
+        INSERT INTO commons_l3.dim_nbu_currencies_latest
+        SELECT
+          code,
+          id,
+          name,
+          parameters_eng,
+          parameters_rus,
+          parameters_ukr,
+          symbol,
+          version
+        FROM commons_l3.dim_nbu_currencies_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

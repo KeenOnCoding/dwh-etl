@@ -1,0 +1,111 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - commons_l3.dim_employees_staging
+      - commons_l3.dim_ets_users_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - commons_l3.dim_employees_latest
+  queries:
+    - description: copy from tmp
+      staging-table: commons_l3.dim_employees_staging~A
+      partition-column: version
+      sql: |
+        INSERT INTO commons_l3.dim_employees_latest(
+          version, 
+          id, 
+          gender, 
+          date_of_birth, 
+          birth_df,
+          first_name, 
+          last_name, 
+          login_ad, 
+          email,
+          city_id, 
+          country_id, 
+          position_id, 
+          department_id,
+          dm_id, 
+          spm_id, 
+          tm_id, 
+          mentor_id, 
+          pplm_id, 
+          hrpp_id, 
+          hrbp_id, 
+          is_terminated, 
+          is_contractor, 
+          room,
+          first_working_date,  
+          first_working_df, 
+          last_working_date,
+          work_experience, 
+          lm_id, 
+          category_id,
+          last_ppr_date, 
+          last_ppr_df, 
+          next_ppr_date,
+          next_ppr_df, 
+          calendar_id, technology_id,
+          resource_manager_id, 
+          is_extended_vacation,
+          in_alumni_club_since, 
+          status, 
+          planned_first_working_date,
+          home_country_id, 
+          home_city_id, 
+          calendar_id_global
+        )
+        SELECT 
+          A.version,
+          id,
+          gender,
+          date_of_birth,
+          CAST(date_of_birth AS DATE) AS birth_df,
+          first_name,
+          last_name,
+          login_ad,
+          email,
+          city_id, 
+          country_id,
+          position_id,
+          department_id,
+          dm_id,
+          spm_id,
+          tm_id,
+          mentor_id,
+          pplm_id,
+          hrpp_id, 
+          hrbp_id,
+          is_terminated,
+          CASE 
+              WHEN A.is_contractor=1 THEN 1
+              ELSE 0
+          END AS is_contractor,
+          room,
+          first_working_date,
+          CAST(first_working_date AS DATE) AS first_working_df,
+          last_working_date,
+          work_experience,
+          lm_id,
+          category_id,
+          last_ppr_date,
+          CAST(last_ppr_date AS DATE) AS last_ppr_df,
+          next_ppr_date,
+          CAST(next_ppr_date AS DATE) AS next_ppr_df,
+          B.calendar_id,
+          A.technology_id,
+          A.resource_manager_id,
+          A.is_extended_vacation,
+          A.in_alumni_club_since,
+          A.status,
+          A.planned_first_working_date,
+          A.home_country_id,
+          A.home_city_id,
+          A.calendar_id AS calendar_id_global
+        FROM commons_l3.dim_employees_staging A
+        LEFT JOIN commons_l3.dim_ets_users_staging B
+        ON lower(B.user_code) = lower(A.login_ad)
+        AND B.version = :commons_l3.dim_ets_users_staging_version -- We use here the maximum version of ets users in staging
+        WHERE {BATCH_HIGH_LOW_FILTER};                            -- assuming that this script and script for ets users will be run
+                                                                  -- within a short period of time from each other

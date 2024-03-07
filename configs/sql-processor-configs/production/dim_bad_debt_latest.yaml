@@ -1,0 +1,17 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - finance_l2.dim_bad_debt_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - finance_l2.dim_bad_debt_latest
+  queries:
+    - description: copy from staging
+      staging-table: finance_l2.dim_bad_debt_staging
+      partition-column: version
+      sql: |
+        INSERT INTO finance_l2.dim_bad_debt_latest
+        SELECT *
+        FROM finance_l2.dim_bad_debt_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

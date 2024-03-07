@@ -1,0 +1,18 @@
+{
+  "processing": {
+    "sql_processor": {
+      "plan_id": "fact_employee_state_v2",
+      "catchup": false,
+      "dynamic_variable": [
+        {
+          "variable": "EMPLOYEE_HISTORY_TABLE",
+          "value": "commons_l3.fact_employees_change_history_with_transfer_view"
+        },
+        {
+          "variable": "TARGET_TABLE",
+          "value": "commons_l3.fact_employee_change_state_transfer"
+        }
+      ]
+    }
+  }
+}

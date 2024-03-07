@@ -1,0 +1,26 @@
+FROM openjdk:11
+COPY --from=python:3.10-slim / /
+
+ENV TZ=Europe/Kiev
+RUN groupadd --gid 2000 docker && \
+    useradd --uid 2000 --gid docker --shell /bin/bash se
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update && \
+    ACCEPT_EULA=Y apt-get install -y msodbcsql17 && \
+    apt-get install -y --reinstall build-essential && \
+    apt-get install -y unixodbc-dev python3-dev && \
+    pip install --upgrade pip
+
+
+WORKDIR /dwh
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+
+RUN wget https://repo1.maven.org/maven2/com/microsoft/azure/spark-mssql-connector/1.0.0/spark-mssql-connector-1.0.0.jar && \
+    wget https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/7.2.1.jre11/mssql-jdbc-7.2.1.jre11.jar && \
+    mv *.jar $(pip show pyspark | grep Location | cut -c 11-)/pyspark/jars
+
+COPY . /dwh

@@ -1,0 +1,5 @@
+{
+    "data_lag": {
+        "metric_name": "v4_dwh_data_lag"
+    }
+}

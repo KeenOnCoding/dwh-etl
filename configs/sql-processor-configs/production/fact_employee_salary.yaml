@@ -1,0 +1,31 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - finance.fact_employee_salary
+  queries:
+    - description: copy from staging to latest
+      staging-table: finance_l1.fact_employee_salary_staging
+      partition-column: batch_id
+      sql: |
+
+        DELETE FROM finance_l1.fact_employee_salary
+        WHERE period in (SELECT DISTINCT period FROM finance_l1.fact_employee_salary_staging
+                            WHERE {BATCH_HIGH_LOW_FILTER})
+
+        INSERT INTO finance_l1.fact_employee_salary(
+          day_average_rate,
+          employee_id,
+          hour_average_rate,
+          monthly_salary,
+          period,
+          batch_id)
+        SELECT
+          day_average_rate,
+          employee_id,
+          hour_average_rate,
+          monthly_salary,
+          period,
+          batch_id
+        FROM finance_l1.fact_employee_salary_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

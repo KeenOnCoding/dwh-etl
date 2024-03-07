@@ -1,0 +1,50 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "employee-salary-ingestion",
+            "target_table": "finance_l1.fact_employee_salary_staging",
+            "date_format": "%d.%m.%Y",
+            "from_to_params_names": ["datefrom", "dateto"],
+            "partition_columns": "batch_id"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "INCREMENTAL",
+            "incremental": {
+                "incremental_strategy": "BACKFILL",
+                "general": {
+                    "batch_window": 0,
+                    "date_from_time_offset": 1,
+                    "granularity": "months",
+                    "date_column": "[period]",
+                    "default_partition_value": "2016-01-01 00:00:00"
+                }
+            }
+        },
+        "data_manager": {
+            "date_manager_mode":"SUBSTITUTE",
+            "data_manager_window": "2-month-ago",
+            "hash_sum_checker_impl": "1C",
+            "track_hash_sum": true,
+            "hash_sum_response_key": "version",
+            "hash_sum_table": "dbo.util_hash_sum_storage"
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "api_url": "https://vm-tex-01:8243/1c/finapi/v2/employee_salary",
+            "extra_params": "${EXTRA_PARAMS}",
+            "data_response_key": "data"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id" : "fact_employee_salary",
+            "raise_when_no_batches_to_process": false
+        }
+    }
+}

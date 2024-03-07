@@ -1,0 +1,79 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - hr_l2.fact_hr_tool_questionnaire_submission
+  queries:
+    - description: parse questionnaire submission answers and move data to the user layer
+      staging-table: hr_l2.fact_hr_tool_questionnaire_submission_staging
+      partition-column: batch_id
+      auto-cleanup:
+        - "#LATEST_QUESTIONNAIRES_SUBMISSIONS"
+      sql: |
+        SELECT *
+        INTO #LATEST_QUESTIONNAIRES_SUBMISSIONS
+        FROM (
+        	SELECT *
+        	FROM (
+        		SELECT *,
+        			ROW_NUMBER() OVER (
+        				PARTITION BY id ORDER BY updated_at DESC
+        				) AS row_num
+        		FROM hr_l2.fact_hr_tool_questionnaire_submission_staging
+        		WHERE {BATCH_HIGH_LOW_FILTER}
+        		) A
+        	WHERE row_num = 1
+        	) B;
+
+        DELETE
+        FROM hr_l2.fact_hr_tool_questionnaire_submission
+        WHERE id IN (
+        		SELECT id
+        		FROM #LATEST_QUESTIONNAIRES_SUBMISSIONS
+        		);
+
+        DELETE
+        FROM hr_l2.fact_hr_tool_questionnaire_submission_answer
+        WHERE questionnaire_id IN (
+        		SELECT id
+        		FROM #LATEST_QUESTIONNAIRES_SUBMISSIONS
+        		);
+
+        INSERT INTO hr_l2.fact_hr_tool_questionnaire_submission (
+        	batch_id,
+        	id,
+        	questionnaire_id,
+        	marked_as_hidden_at,
+        	marked_as_hidden_by,
+        	requested_to_revise_at,
+        	requested_to_revise_by,
+        	reviewer_id,
+        	revise_reason,
+        	created_at,
+        	updated_at
+        	)
+        SELECT batch_id,
+        	id,
+        	questionnaire_id,
+        	marked_as_hidden_at,
+        	marked_as_hidden_by,
+        	requested_to_revise_at,
+        	requested_to_revise_by,
+        	reviewer_id,
+        	revise_reason,
+        	created_at,
+        	updated_at
+        FROM #LATEST_QUESTIONNAIRES_SUBMISSIONS;
+
+        INSERT INTO hr_l2.fact_hr_tool_questionnaire_submission_answer (
+        	batch_id,
+        	questionnaire_id,
+        	question_id,
+        	answer
+        	)
+        SELECT batch_id,
+        	id AS questionnaire_id,
+        	JSON_VALUE(value, '$.question_id') AS question_id,
+        	JSON_VALUE(value, '$.answer') AS answer
+        FROM #LATEST_QUESTIONNAIRES_SUBMISSIONS
+        CROSS APPLY OPENJSON(answers) A;

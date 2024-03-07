@@ -1,0 +1,5 @@
+.gitignore
+**/*.md
+.pytest_cache
+venv/
+

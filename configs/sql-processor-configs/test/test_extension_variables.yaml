@@ -1,0 +1,14 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - test_table_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - dbo.test_table_latest
+  queries:
+    - description: copy from tmp
+      sql: |
+        INSERT INTO dbo.test_table_latest
+        SELECT * FROM dbo.test_table_staging
+        WHERE version = :test_table_staging_version;

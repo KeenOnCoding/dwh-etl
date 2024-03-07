@@ -1,0 +1,77 @@
+pool:
+  name: 'AZURE_WORKERS'
+  demands:
+    - agent.name -equals AGENT_DPS
+
+workspace:
+  clean: all
+
+trigger:
+  - "*"
+
+variables:
+  VERSION: 1.0
+  PROJECT: ssus
+  TARGET_HOST: 'vm-dps-02.ipa.dev.sigmaukraine.com'
+  TARGET_HOST_USER: azuredeploy
+
+steps:
+  - checkout: self
+    submodules: true
+    persistCredentials: true
+    displayName: 'Submodule checkout'
+
+  - script: |
+      echo "..............................................."
+      echo $(target_host)
+      echo "..............................................."
+      rsync -qcarv -z --exclude '.git*' --delete --ignore-errors --force --progress -e "ssh -i /home/azuredeploy/.ssh/deploy" ./* $(TARGET_HOST_USER)@$(TARGET_HOST):/home/azuredeploy/dwh-etl/
+    displayName: 'Sync repository with vm-dps-02'
+
+  - task: SSH@0
+    displayName: 'Initialization'
+    inputs:
+      sshEndpoint: 'SSH-Connection-VM-DPS-02'
+      commands: |
+        chmod 0700 ./dwh-etl/run-scripts/ci-init.sh
+        chown -R azuredeploy:azuredeploy ./dwh-etl
+        ./dwh-etl/run-scripts/ci-init.sh
+      failOnStdErr: false
+
+  - task: SSH@0
+    displayName: 'Test'
+    inputs:
+      sshEndpoint: 'SSH-Connection-VM-DPS-02'
+      commands: |
+        chmod 0700 ./dwh-etl/run-scripts/ci-test.sh
+        chown -R azuredeploy:azuredeploy ./dwh-etl
+          ./dwh-etl/run-scripts/ci-test.sh
+      failOnStdErr: false
+
+  - task: SSH@0
+    displayName: 'Lint'
+    inputs:
+      sshEndpoint: 'SSH-Connection-VM-DPS-02'
+      commands: |
+        chmod 0700 ./dwh-etl/run-scripts/ci-lint.sh
+        chown -R azuredeploy:azuredeploy ./dwh-etl
+        ./dwh-etl/run-scripts/ci-lint.sh
+      failOnStdErr: false
+
+  - task: SSH@0
+    displayName: 'Post'
+    condition: always()
+    inputs:
+      sshEndpoint: 'SSH-Connection-VM-DPS-02'
+      commands: |
+        chmod 0700 ./dwh-etl/run-scripts/ci-post.sh
+        chown -R azuredeploy:azuredeploy ./dwh-etl
+        ./dwh-etl/run-scripts/ci-post.sh
+      failOnStdErr: false
+
+  - task: DeleteFiles@1
+    displayName: 'Delete files from ./'
+    inputs:
+      SourceFolder: ./
+      Contents: '*'
+      RemoveSourceFolder: true

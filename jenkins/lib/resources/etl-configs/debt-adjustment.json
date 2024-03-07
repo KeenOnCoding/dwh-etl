@@ -1,0 +1,54 @@
+{
+  "ingestion": {
+    "general": {
+      "job_name": "debt-adjustment-ingestion",
+      "target_table": "finance_l2.fact_debt_adjustment_staging",
+      "date_format": "%d.%m.%Y",
+      "partition_columns": "batch_id",
+      "from_to_params_names": ["datefrom","dateto"]
+    },
+    "auth": {
+      "auth_strategy": "OAUTH2",
+      "auth_url": "https://vm-tex-01:8243/token",
+      "client_id": "${CLIENT_ID}",
+      "client_secret": "${CLIENT_SECRET}"
+    },
+    "fetching_strategy": {
+      "fetching_strategy": "INCREMENTAL",
+      "incremental": {
+        "incremental_strategy": "BACKFILL",
+        "general": {
+          "batch_window": 0,
+          "date_from_time_offset": 0,
+          "granularity": "months",
+          "date_column": "date",
+          "default_partition_value": "2011-05-01 00:00:00",
+          "align_dates": true
+        }
+      }
+    },
+    "enrichers": {
+      "track_db_schema": true
+    },
+    "data_manager": {
+      "date_manager_mode":"SUBSTITUTE",
+      "data_manager_window": "12-month-ago",
+      "hash_sum_checker_impl": "1C",
+      "track_hash_sum": true,
+      "hash_sum_response_key": "version",
+      "hash_sum_table": "dbo.util_hash_sum_storage"
+    },
+    "data_source": {
+      "data_source": "GENERIC-REST",
+      "data_response_key": "data",
+      "extra_params": "${EXTRA_PARAMS}",
+      "api_url": "https://vm-tex-01:8243/1c/finapi/v2/debt_adjustment"
+    }
+  },
+  "processing": {
+    "sql_processor": {
+      "plan_id": "fact_debt_adjustment",
+      "raise_when_no_batches_to_process": false
+    }
+  }
+}

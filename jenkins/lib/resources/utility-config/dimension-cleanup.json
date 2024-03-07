@@ -1,0 +1,225 @@
+{
+    "dimension_cleanup": {
+        "hr-tool-employee-satisfaction-types": {
+            "dim_cleanup_target_table": "hr_l2.dim_hr_tool_employee_satisfaction_type_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "hr-tool-leave-reasons": {
+            "dim_cleanup_target_table": "hr_l2.dim_hr_tool_leave_reason_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "hr-tool-levels": {
+            "dim_cleanup_target_table": "hr_l2.dim_hr_tool_level_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "hr-tool-mentors": {
+            "dim_cleanup_target_table": "hr_l2.dim_hr_tool_mentor_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "hr-tool-record-types": {
+            "dim_cleanup_target_table": "hr_l2.dim_hr_tool_record_type_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "hr-tool-requirements": {
+            "dim_cleanup_target_table": "hr_l2.dim_hr_tool_requirement_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "hr-tool-roadmaps": {
+            "dim_cleanup_target_table": "hr_l2.dim_hr_tool_roadmap_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "hr-tool-skills": {
+            "dim_cleanup_target_table": "hr_l2.dim_hr_tool_skill_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "finance-reports": {
+            "dim_cleanup_target_table": "finance_l2.fact_finance_reports_staging",
+            "dim_cleanup_partition_column": "batch_id",
+            "retention_time": "1"
+        },
+        "employee": {
+            "dim_cleanup_target_table": "commons_l3.dim_employees_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "project": {
+            "dim_cleanup_target_table": "commons_l3.dim_projects_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "department": {
+            "dim_cleanup_target_table": "commons_l3.dim_departments_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "category": {
+            "dim_cleanup_target_table": "commons_l3.dim_categories_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "department-history": {
+            "dim_cleanup_target_table": "commons_l3.dim_departments_history_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "category-history": {
+            "dim_cleanup_target_table": "commons_l3.dim_categories_history_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "position": {
+            "dim_cleanup_target_table": "commons_l3.dim_positions_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "account": {
+            "dim_cleanup_target_table": "commons_l3.dim_accounts_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "position-history": {
+            "dim_cleanup_target_table": "commons_l3.dim_positions_history_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "localization": {
+            "dim_cleanup_target_table": "commons_l3.dim_localizations_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "cost-center": {
+            "dim_cleanup_target_table": "commons_l3.dim_cost_centers_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "workplace": {
+            "dim_cleanup_target_table": "commons_l3.dim_workplaces_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "workplace-history": {
+            "dim_cleanup_target_table": "commons_l3.fact_workplaces_history_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "employee-work-history": {
+            "dim_cleanup_target_table": "commons_l3.fact_employees_change_history_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "ets-user": {
+            "dim_cleanup_target_table": "commons_l3.dim_ets_users_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "country": {
+            "dim_cleanup_target_table": "commons_l3.dim_countries_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "domain": {
+            "dim_cleanup_target_table": "commons_l3.dim_domains_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "sr-job": {
+            "dim_cleanup_target_table": "resourcing_l3.dim_sr_jobs_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "2"
+        },
+        "uttool": {
+            "dim_cleanup_target_table": "resourcing_l3.fact_utilization_tool_data_staging",
+            "dim_cleanup_partition_column": "batch_id",
+            "retention_time": "1"
+        },
+        "currency-rate": {
+            "dim_cleanup_target_table": "commons_l3.fact_nbu_currency_rate_staging",
+            "dim_cleanup_partition_column": "batch_id",
+            "retention_time": "15"
+        },
+        "city": {
+            "dim_cleanup_target_table": "commons_l3.dim_city_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "opportunity-account": {
+            "dim_cleanup_target_table": "commons_l3.dim_opportunity_account_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "opportunity-cost-center": {
+            "dim_cleanup_target_table": "commons_l3.dim_opportunity_cost_center_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "opportunity-project": {
+            "dim_cleanup_target_table": "commons_l3.dim_opportunity_project_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "reasons-extended-leave": {
+            "dim_cleanup_target_table": "commons_l3.dim_reason_extended_leave_staging\n",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "technology": {
+            "dim_cleanup_target_table": "commons_l3.dim_technology_1c_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "bank": {
+            "dim_cleanup_target_table": "finance_l1.dim_banks_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "bank-account": {
+            "dim_cleanup_target_table": "finance_l1.dim_bank_accounts_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "cashbox": {
+            "dim_cleanup_target_table": "finance_l1.dim_cashboxes_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "sr-application": {
+            "dim_cleanup_target_table": "resourcing_l3.fact_sr_application_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "1"
+        },
+        "calendars":{
+            "dim_cleanup_target_table": "resourcing_l3.calendars_staging",
+            "dim_cleanup_partition_column": "batch_id",
+            "retention_time": "60"
+        },
+        "department-hierarchy": {
+            "dim_cleanup_target_table": "resourcing_l3.fact_department_hierarchy_staging",
+            "dim_cleanup_partition_column": "batch_id",
+            "retention_time": "5"
+        },
+        "nlms-reports": {
+            "dim_cleanup_target_table": "lms_l3.extended_grade_report_staging",
+            "dim_cleanup_partition_column": "batch_id",
+            "retention_time": "7"
+        },
+        "riksbank_crossrate": {
+            "dim_cleanup_target_table": "commons_l3.fact_riksbank_currencies_crossrates_staging",
+            "dim_cleanup_partition_column": "batch_id",
+            "retention_time": "60"
+        },
+        "riksbank_currency": {
+            "dim_cleanup_target_table": "commons_l3.dim_riksbank_currency_codes_staging",
+            "dim_cleanup_partition_column": "version",
+            "retention_time": "60"
+        }
+
+    }
+}

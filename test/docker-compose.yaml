@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  test-db:
+    image: "mcr.microsoft.com/mssql/server"
+    container_name: 'db'
+    ports:
+      - 1433:1433
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      SA_PASSWORD: "K~whj<[4-:>3~XSw"
+      ACCEPT_EULA: "Y"
+
+
+networks:
+  default:
+    external:
+      name: test-network

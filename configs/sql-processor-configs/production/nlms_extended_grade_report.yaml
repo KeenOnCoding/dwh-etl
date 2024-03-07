@@ -1,0 +1,109 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - lms_l3.extended_grade_report_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - lms_l3.dim_student
+      - lms_l3.dim_course
+      - lms_l3.fact_grade
+      - lms_l3.fact_enrollment
+      - lms_l3.fact_certificate
+  queries:
+    - description: overwrite dimension and fact tables
+      sql: |
+
+        INSERT INTO lms_l3.dim_student(
+          student_id,
+          email,
+          username,
+          verification_status
+          )
+        SELECT 
+          CAST(student_id AS INTEGER),
+          email,
+          username,
+          verification_status
+        FROM lms_l3.extended_grade_report_staging
+        WHERE batch_id = (select MAX(batch_id) from lms_l3.extended_grade_report_staging)
+        GROUP BY student_id, email, username, verification_status
+        ORDER BY student_id;
+        
+        
+        INSERT INTO lms_l3.dim_course(
+          course_id,
+          course_name
+          )
+        SELECT 
+          course_id,
+          course_name
+        FROM lms_l3.extended_grade_report_staging
+        WHERE batch_id = (select MAX(batch_id) from lms_l3.extended_grade_report_staging)
+        GROUP BY course_id, course_name
+        ORDER BY course_id;
+        
+
+        INSERT INTO lms_l3.fact_grade(
+          grade,
+          homework,
+          homework_avg, 
+          student_id,
+          course_id)
+        SELECT
+          CAST( grade AS DECIMAL(10,3) ),
+          CAST(
+                CASE
+                  WHEN homework = 'Not Attempted' THEN NULL ELSE homework
+                END 
+              AS DECIMAL(10,3))
+            AS homework,
+          CAST(
+                CASE
+                   WHEN homework_avg = 'Not Attempted' THEN NULL ELSE homework_avg
+                END 
+             AS DECIMAL(10,3))
+            AS homework_avg,
+            CAST( student_id AS INTEGER),
+            course_id
+        FROM lms_l3.extended_grade_report_staging
+        WHERE batch_id = (select MAX(batch_id) from lms_l3.extended_grade_report_staging);
+        
+        
+        INSERT INTO lms_l3.fact_enrollment(
+          enrollment_track,
+          enrollment_status,
+          enrollment_date,
+          course_passing_date,
+          student_id,
+          course_id
+        ) 
+        SELECT
+          enrollment_track,
+          enrollment_status,
+          CAST(stuff(enrollment_date,11,1,' ') AS datetime2) AS enrollment_date,
+          CAST(stuff(course_passing_date,11,1,' ') AS datetime2) AS course_passing_date ,
+          CAST(student_id AS INTEGER),
+          course_id
+        FROM lms_l3.extended_grade_report_staging
+        WHERE batch_id = (select MAX(batch_id) from lms_l3.extended_grade_report_staging);
+
+
+        INSERT INTO lms_l3.fact_certificate(
+          certificate_eligible,
+          certificate_delivered,
+          certificate_type,
+          student_id,
+          course_id
+        ) 
+        SELECT
+          certificate_eligible,
+          certificate_delivered,
+          CASE 
+          	when certificate_type = 'N/A' THEN NULL 
+          	ELSE certificate_type
+          END,
+          CAST(student_id AS INTEGER),
+          course_id
+        FROM lms_l3.extended_grade_report_staging
+        WHERE batch_id = (select MAX(batch_id) from lms_l3.extended_grade_report_staging);

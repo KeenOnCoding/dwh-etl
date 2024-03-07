@@ -1,0 +1,26 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - resourcing_l3.fact_sr_application_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - resourcing_l3.fact_sr_application
+  queries:
+    - description: copy application from staging
+      staging-table: resourcing_l3.fact_sr_application_staging
+      partition-column: version
+      sql: |
+        INSERT INTO resourcing_l3.fact_sr_application (
+          version,
+          hired_without_vacancy,
+          job_id,
+          hired_position_id
+        )
+        SELECT
+          A.version,
+          A.hired_without_vacancy,
+          A.job_id,
+          A.hired_position_id
+        FROM resourcing_l3.fact_sr_application_staging A
+        WHERE {BATCH_HIGH_LOW_FILTER};

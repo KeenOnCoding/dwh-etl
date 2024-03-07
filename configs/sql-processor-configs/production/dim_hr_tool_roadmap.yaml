@@ -1,0 +1,37 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - hr_l2.dim_hr_tool_roadmap_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - hr_l2.dim_hr_tool_roadmap_latest
+  queries:
+    - description: overwrite latest
+      staging-table: hr_l2.dim_hr_tool_roadmap_staging
+      partition-column: version
+      sql: |
+        INSERT INTO hr_l2.dim_hr_tool_roadmap_latest (
+        	version,
+        	id,
+        	staff_member_id,
+        	forecasted_promotion_date,
+        	checkpoint_date,
+        	checkpoint_comment,
+        	checkpoint_set_by,
+        	is_north_star_goals_on,
+        	created_at,
+        	updated_at
+        	)
+        SELECT version,
+        	id,
+        	staff_member_id,
+        	forecasted_promotion_date,
+        	checkpoint_date,
+        	checkpoint_comment,
+        	checkpoint_set_by,
+        	is_north_star_goals_on,
+        	created_at,
+        	updated_at
+        FROM hr_l2.dim_hr_tool_roadmap_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

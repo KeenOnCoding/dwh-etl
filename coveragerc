@@ -1,0 +1,8 @@
+[run]
+omit= */*/start.py
+      */*/main.py
+
+
+[report]
+skip_covered = False
+sort = Cover

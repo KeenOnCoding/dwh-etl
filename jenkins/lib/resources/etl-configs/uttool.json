@@ -1,0 +1,45 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "utilization-tool-ingestion",
+            "target_table": "resourcing_l3.fact_utilization_tool_data_staging",
+            "date_format": "%d.%m.%Y",
+            "partition_columns": "batch_id"
+        },
+        "auth": {
+            "auth_strategy": "BASIC",
+            "api_user" : "${API_USER}",
+            "api_password": "${API_PASSWORD}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "WEEK-YEAR"
+        },
+        "enrichers": {
+            "track_db_schema": true,
+            "stringify_json_columns": ["opportunities","technologies"],
+            "field_mapping":
+                [
+                    {
+                        "from": "avlb_value",
+                        "to": "avbl_value"
+                    },
+                    {
+                        "from": "one_s_id",
+                        "to": "staff_member_id"
+                    }
+                ],
+            "surrogate_key_columns": "sid"
+        },
+        "data_source": {
+            "data_source": "ACCUMULATIVE",
+            "data_response_key": "data",
+            "api_url": "https://utilization.i.sigmaukraine.com/api/benches/nonbillabilities",
+            "limiter": 6
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id": "fact_utilization_tool_latest"
+        }
+    }
+}

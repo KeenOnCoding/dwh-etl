@@ -1,0 +1,77 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - hr_l2.fact_hr_tool_questionnaire
+  queries:
+    - description: parse questionnaire questions and move data to the user layer
+      staging-table: hr_l2.fact_hr_tool_questionnaire_staging
+      partition-column: batch_id
+      auto-cleanup:
+        - "#LATEST_QUESTIONNAIRES"
+      sql: |
+        SELECT *
+        INTO #LATEST_QUESTIONNAIRES
+        FROM (
+        	SELECT *
+        	FROM (
+        		SELECT *,
+        			ROW_NUMBER() OVER (
+        				PARTITION BY id ORDER BY updated_at DESC
+        				) AS row_num
+        		FROM hr_l2.fact_hr_tool_questionnaire_staging
+        		WHERE {BATCH_HIGH_LOW_FILTER}
+        		) A
+        	WHERE row_num = 1
+        	) B;
+
+        DELETE
+        FROM hr_l2.fact_hr_tool_questionnaire
+        WHERE id IN (
+        		SELECT id
+        		FROM #LATEST_QUESTIONNAIRES
+        		);
+
+        DELETE
+        FROM hr_l2.fact_hr_tool_questionnaire_question
+        WHERE questionnaire_id IN (
+        		SELECT id
+        		FROM #LATEST_QUESTIONNAIRES
+        		);
+
+        INSERT INTO hr_l2.fact_hr_tool_questionnaire (
+        	batch_id,
+        	id,
+        	requester_id,
+        	reviewee_id,
+        	type,
+        	message,
+        	due_date,
+        	is_archived,
+        	created_at,
+        	updated_at
+        	)
+        SELECT batch_id,
+        	id,
+        	requester_id,
+        	reviewee_id,
+        	type,
+        	message,
+        	due_date,
+        	is_archived,
+        	created_at,
+        	updated_at
+        FROM #LATEST_QUESTIONNAIRES;
+
+        INSERT INTO hr_l2.fact_hr_tool_questionnaire_question (
+        	batch_id,
+        	questionnaire_id,
+        	id,
+        	[text]
+        	)
+        SELECT batch_id,
+            id AS questionnaire_id,
+        	JSON_VALUE(value, '$.id') AS id,
+        	JSON_VALUE(value, '$.text') AS [text]
+        FROM #LATEST_QUESTIONNAIRES
+        CROSS APPLY OPENJSON(questions) A;

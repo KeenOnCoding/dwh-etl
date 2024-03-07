@@ -1,0 +1,24 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - finance_l2.fact_invoices_staging
+  queries:
+    - description: copy invoices from staging table
+      staging-table: finance_l2.fact_invoices_staging
+      partition-column: batch_id
+      sql: |
+        BEGIN TRANSACTION [tran]
+        BEGIN TRY
+          DELETE FROM finance_l2.fact_invoices_latest
+          WHERE EOMONTH(date) in 
+            (SELECT DISTINCT(EOMONTH(date)) FROM finance_l2.fact_invoices_staging
+             WHERE {BATCH_HIGH_LOW_FILTER})
+          INSERT INTO finance_l2.fact_invoices_latest
+          SELECT * FROM finance_l2.fact_invoices_staging
+          WHERE {BATCH_HIGH_LOW_FILTER}
+          COMMIT TRANSACTION [tran]
+        END TRY
+        BEGIN CATCH
+          ROLLBACK TRANSACTION [tran]
+        END CATCH

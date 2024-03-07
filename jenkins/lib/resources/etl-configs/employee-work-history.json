@@ -1,0 +1,37 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "employee-work-history-ingestion",
+            "target_table": "commons_l3.fact_employees_change_history_staging",
+            "partition_columns": "version"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "SNAPSHOT"
+        },
+        "enrichers": {
+            "track_db_schema": true,
+            "field_mapping":
+                [
+                    {
+                        "from": "reason_extended_leave",
+                        "to": "reason_extended_leave_id"
+                    }
+                ]
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "api_url": "https://vm-tex-01:8243/1c/api/v2/employees_work_history"
+        }
+    },
+    "processing": {
+        "sql_processor":{
+            "plan_id" : "fact_employee_change_history"
+        }
+    }
+}

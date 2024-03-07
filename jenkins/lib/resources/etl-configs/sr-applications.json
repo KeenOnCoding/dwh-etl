@@ -1,0 +1,39 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "sr-application-ingestion",
+            "target_table": "resourcing_l3.fact_sr_application_staging",
+            "partition_columns": "version"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://www.smartrecruiters.com/identity/oauth/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "SNAPSHOT"
+        },
+        "enrichers": {
+            "track_db_schema": true,
+            "hash_column": "hash_sum",
+            "have_hash_sum": true,
+            "field_mapping":
+                [
+                    {
+                      "from": "application_field:_hired_without_vacancy",
+                      "to": "hired_without_vacancy"
+                    }
+                ]
+        },
+        "data_source": {
+            "data_source": "SMART-RECRUITERS-REST",
+            "api_url": "https://api.smartrecruiters.com/reporting-api/v201804/reports/a44d20e1-5349-4a77-8520-ca8cc7f59c51/files/recent/data"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id": "dim_sr_application_latest"
+        }
+    }
+}

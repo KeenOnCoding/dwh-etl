@@ -1,0 +1,64 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "currency-rate-nbu-ingestion",
+            "target_table": "commons_l3.fact_nbu_currency_rate_staging",
+            "date_format": "%d.%m.%Y",
+            "from_to_params_names": ["date"],
+            "fetch_pause": "10s",
+            "partition_columns": "batch_id"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "INCREMENTAL",
+            "incremental": {
+                "incremental_strategy": "BACKFILL",
+                "general": {
+                    "batch_window": 0,
+                    "date_from_time_offset": -1,
+                    "granularity": "days",
+                    "align_dates": true,
+                    "date_column": "[date]",
+                    "default_partition_value": "2010-01-01 00:00:00"
+                }
+            }
+        },
+        "enrichers": {
+            "track_db_schema": true,
+            "date_column_to_datetime" : "date",
+            "date_column_origin_format": "%d.%m.%Y",
+            "field_mapping":
+                [
+                    {
+                        "from": "StartDate",
+                        "to": "date"
+                    },
+                    {
+                        "from": "CurrencyCode",
+                        "to": "currency_code"
+                    },
+                    {
+                        "from": "CurrencyCodeL",
+                         "to": "currency_code_l"
+                    },
+                    {
+                        "from": "Units",
+                         "to": "multiplier"
+                    },
+                    {
+                        "from": "Amount",
+                         "to": "rate"
+                    }
+                ]
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "api_url": "https://bank.gov.ua/NBU_Exchange/exchange",
+            "extra_params": "json"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id" : "fact_currency_rate"
+        }
+    }
+}

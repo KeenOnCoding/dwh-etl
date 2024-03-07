@@ -1,0 +1,27 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - hr_l3.fact_headcount
+  queries:
+    - description: copy headcount from staging
+      staging-table: hr_l3.fact_headcount_staging
+      partition-column: batch_id
+      sql: |
+        INSERT INTO hr_l3.fact_headcount(
+          [date],
+          df,
+          [type],
+          position_id,
+          department_id,
+          headcount,
+          batch_id)
+        SELECT [date],
+          CAST([date] AS DATE) AS df,
+          [type],
+          position_id,
+          department_id,
+          headcount,
+          batch_id
+        FROM hr_l3.fact_headcount_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

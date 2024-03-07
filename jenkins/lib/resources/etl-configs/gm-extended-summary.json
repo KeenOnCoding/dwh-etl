@@ -1,0 +1,47 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "gm-extended-summary-ingestion",
+            "target_table": "finance_l2.fact_gm_extended_summary_staging",
+            "date_format": "%d.%m.%Y",
+            "from_to_params_names": ["datefrom","dateto"],
+            "partition_columns": "batch_id"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "INCREMENTAL",
+            "incremental": {
+                "incremental_strategy": "BACKFILL",
+                "general": {
+                    "batch_window": 0,
+                    "date_from_time_offset": -13,
+                    "granularity": "months",
+                    "align_dates": true,
+                    "date_column": "[date]",
+                    "default_partition_value": "2018-01-01 00:00:00"
+                },
+                "backfill": {
+                    "backfill_upper_offset": 12
+                }
+            }
+        },
+        "enrichers": {
+            "track_db_schema": true
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "api_url": "https://vm-tex-01:8243/1c/finapi/v2/extendedsummarydata",
+            "extra_params": "${EXTRA_PARAMS}"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id": "fact_gm_extended_summary"
+        }
+    }
+}

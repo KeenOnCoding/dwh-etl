@@ -1,0 +1,76 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - commons_l3.dim_employees_v2_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - commons_l3.dim_employees_v2_latest
+  queries:
+    - description: copy from tmp
+      staging-table: commons_l3.dim_employees_v2_staging
+      partition-column: version
+      sql: |
+        INSERT INTO commons_l3.dim_employees_v2_latest (
+        	version,
+            id,
+            personnel_number,
+            first_name,
+            last_name,
+            email,
+            [login],
+            resource_manager_id,
+            country_code,
+            city,
+            office,
+            floor,
+            room,
+            title,
+            profession,
+            organizational_unit_id,
+            employment_date,
+            termination_date,
+            employment_duration,
+            prior_employment_experience,
+            employment_status,
+            contracting_country_code,
+            contracting_country_codes,
+            manager_id,
+            position_id,
+            hr_id,
+            person_id,
+            accountant_id,
+            display_name
+        )
+        SELECT 
+            version,
+            id,
+            personnel_number,
+            first_name,
+            last_name,
+            email,
+            [login],
+            resource_manager_id,
+            country_code,
+            city,
+            office,
+            floor,
+            room,
+            title,
+            profession,
+            organizational_unit_id,
+            employment_date,
+            termination_date,
+            employment_duration,
+            prior_employment_experience,
+            employment_status,
+            contracting_country_code,
+            contracting_country_codes,
+            manager_id,
+            position_id,
+            hr_id,
+            person_id,
+            accountant_id,
+            display_name
+        FROM commons_l3.dim_employees_v2_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

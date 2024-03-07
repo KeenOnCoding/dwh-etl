@@ -1,0 +1,99 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - resourcing_l3.fact_time_reports_v2
+  queries:
+      - description: process time reports table
+        staging-table: resourcing_l3.fact_time_reports_v2_staging
+        partition-column: batch_id
+        sql: |
+          -- select records to process from staging table
+          WITH time_reports_batch
+          AS (
+          	SELECT batch_id,
+          		id,
+          		user_code,
+          		user_id,
+          		is_project_internal,
+          		project_code,
+          		project_id,
+          		task,
+          		issue_id,
+          		approval_tag_group,
+          		approval_tag,
+          		effort,
+          		overtime,
+          		non_billable_comment,
+          		UPPER(LEFT([status], 1)) + LOWER(SUBSTRING([status], 2, LEN([status]))) AS [status],
+          		CASE
+          			WHEN billability = 'Billable'
+          				THEN 'Billable'
+          			ELSE 'Non Billable'
+          			END billability,
+          		started,
+          		finished,
+          		modification_date,
+          		ROW_NUMBER() OVER (
+          			PARTITION BY id ORDER BY modification_date DESC
+          			) row_num,
+                non_payable
+          	FROM resourcing_l3.fact_time_reports_v2_staging A
+          	WHERE {BATCH_HIGH_LOW_FILTER}
+          	)
+          MERGE resourcing_l3.fact_time_reports_v2 AS [Target]
+          USING (
+          	SELECT *
+          	FROM time_reports_batch AS R
+          	WHERE R.row_num = 1
+          	) AS [Source]
+          	ON ([Target].id = [Source].id)
+          WHEN MATCHED
+          	THEN
+          		UPDATE
+          		SET [Target].batch_id = [Source].batch_id,
+          			[Target].user_code = [Source].user_code,
+          			[Target].user_id = [Source].user_id,
+          			[Target].is_project_internal = [Source].is_project_internal,
+          			[Target].project_code = [Source].project_code,
+          			[Target].project_id = [Source].project_id,
+          			[Target].task = [Source].task,
+          			[Target].issue_id = [Source].issue_id,
+          			[Target].approval_tag_group = [Source].approval_tag_group,
+          			[Target].approval_tag = [Source].approval_tag,
+          			[Target].effort = [Source].effort,
+          			[Target].overtime = [Source].overtime,
+          			[Target].non_billable_comment = [Source].non_billable_comment,
+          			[Target].[status] = [Source].[status],
+          			[Target].billability = [Source].billability,
+          			[Target].started = [Source].started,
+          			[Target].finished = [Source].finished,
+          			[Target].modification_date = [Source].modification_date,
+                    [Target].deleted = 0,
+                    [Target].non_payable = [Source].non_payable
+          WHEN NOT MATCHED
+          	THEN
+          		INSERT
+          		VALUES (
+          			[Source].batch_id,
+          			[Source].id,
+          			[Source].user_code,
+          			[Source].user_id,
+          			[Source].is_project_internal,
+          			[Source].project_code,
+          			[Source].project_id,
+          			[Source].task,
+          			[Source].issue_id,
+          			[Source].approval_tag_group,
+          			[Source].approval_tag,
+          			[Source].effort,
+          			[Source].overtime,
+          			[Source].non_billable_comment,
+          			[Source].[status],
+          			[Source].billability,
+          			[Source].started,
+          			[Source].finished,
+          			[Source].modification_date,
+                    0,
+                    [Source].non_payable
+          			);

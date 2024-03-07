@@ -1,0 +1,26 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - commons_l3.fact_riksbank_currency_crossrate_staging
+  queries:
+    - description: from staging
+      staging-table: commons_l3.fact_riksbank_currency_crossrate_staging
+      partition-column: batch_id
+      sql: |
+        MERGE INTO commons_l3.fact_riksbank_currency_crossrate AS target
+        USING (
+            SELECT currency, [date], [value], batch_id 
+            FROM commons_l3.fact_riksbank_currency_crossrate_staging 
+            WHERE {BATCH_HIGH_LOW_FILTER}
+        ) AS source
+        ON (target.currency = source.currency AND target.[date] = source.[date])
+        WHEN MATCHED 
+        THEN
+            UPDATE SET
+                target.[value] = source.[value],
+                target.batch_id = source.batch_id
+        WHEN NOT MATCHED 
+        THEN
+            INSERT (currency, [date], [value], batch_id)
+            VALUES (source.currency, source.[date], source.[value], source.batch_id);

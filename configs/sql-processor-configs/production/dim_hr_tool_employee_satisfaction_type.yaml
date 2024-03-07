@@ -1,0 +1,23 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - hr_l2.dim_hr_tool_employee_satisfaction_type_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - hr_l2.dim_hr_tool_employee_satisfaction_type_latest
+  queries:
+    - description: overwrite latest
+      staging-table: hr_l2.dim_hr_tool_employee_satisfaction_type_staging
+      partition-column: version
+      sql: |
+        INSERT INTO hr_l2.dim_hr_tool_employee_satisfaction_type_latest (
+        	version,
+        	id,
+        	name
+        	)
+        SELECT version,
+        	id,
+        	name
+        FROM hr_l2.dim_hr_tool_employee_satisfaction_type_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

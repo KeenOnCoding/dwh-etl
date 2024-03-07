@@ -1,0 +1,277 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - :TARGET_TABLE
+  variables:
+    TABLES_TO_REWRITE:
+      - :TARGET_TABLE
+  queries:
+    - description: merge employee, categories, and home change history tables into single employee state table
+      sql: |
+        DECLARE @employee_origin_marker VARCHAR(60) = 'employee'
+        DECLARE @category_origin_marker VARCHAR(60) = 'category';
+        DECLARE @home_origin_marker VARCHAR(60) = 'home';
+
+        -- firstly combine employee change data with categories by taking latest categories with appropriate ordering by date
+        WITH history_changes_with_categories
+        AS (
+        	SELECT @employee_origin_marker + ' + ' + @category_origin_marker AS origin,
+        		EH.employee_id,
+        		EH.position_id,
+        		(
+        			SELECT TOP 1 category_id
+        			FROM commons_l3.dim_categories_history_latest CH
+        			WHERE CH.employee_id = EH.employee_id
+        				AND CAST(CH.DATE AS DATE) <= CAST(EH.[date] AS DATE)
+        			ORDER BY DATE DESC
+        			) category_id,
+        		EH.department_id,
+        		EH.STATUS,
+        		CAST(EH.[date] AS DATE) AS [date], -- cast date to date to get rid of hh:mm:ss part
+                EH.date AS date_time,
+        		EH.is_contractor,
+        		EH.attrition,
+        		EH.is_reduction,
+        		EH.id,
+        		EH.type,
+                EH.reason_extended_leave_id
+        	FROM :EMPLOYEE_HISTORY_TABLE EH
+        	),
+        	-- we also have to combine categories with employee change data, because categories and employee data
+        	-- might change asynchronously
+        	-- add changes of categories to employees_change_history only when status, position_id and department_id are not null
+        categories_changes
+        AS (
+        	SELECT *
+        	FROM (
+        		SELECT CASE
+        				WHEN (
+        						SELECT TOP 1 CAST([date] AS DATE) -- cast dates to properly join and pick data
+        						FROM :EMPLOYEE_HISTORY_TABLE EH
+        						WHERE EH.employee_id = CH.employee_id
+        							AND CAST(EH.DATE AS DATE) <= CAST(CH.DATE AS DATE)
+        						ORDER BY [date] DESC
+        						) = CAST(CH.DATE AS DATE)
+        					THEN @employee_origin_marker + ' + ' + @category_origin_marker
+        				ELSE @category_origin_marker
+        				END origin,
+        			CH.employee_id,
+        			(
+        				SELECT TOP 1 position_id
+        				FROM :EMPLOYEE_HISTORY_TABLE EH
+        				WHERE EH.employee_id = CH.employee_id
+        					AND CAST(EH.[date] AS DATE) <= CAST(CH.[date] AS DATE)
+        				ORDER BY [date] DESC
+        				) position_id,
+        			CH.category_id,
+        			(
+        				SELECT TOP 1 department_id
+        				FROM :EMPLOYEE_HISTORY_TABLE EH
+        				WHERE EH.employee_id = CH.employee_id
+        					AND CAST(EH.[date] AS DATE) <= CAST(CH.[date] AS DATE)
+        				ORDER BY [date] DESC
+        				) department_id,
+        			(
+        				SELECT TOP 1 STATUS
+        				FROM :EMPLOYEE_HISTORY_TABLE EH
+        				WHERE EH.employee_id = CH.employee_id
+        					AND CAST(EH.[date] AS DATE) <= CAST(CH.[date] AS DATE)
+        				ORDER BY [date] DESC
+        				) STATUS,
+                    CH.[date] AS date_time,
+        			CAST(CH.[date] AS DATE) AS [date],
+        			(
+        				SELECT TOP 1 is_contractor
+        				FROM :EMPLOYEE_HISTORY_TABLE EH
+        				WHERE EH.employee_id = CH.employee_id
+        					AND CAST(EH.[date] AS DATE) <= CAST(CH.[date] AS DATE)
+        				ORDER BY [date] DESC
+        				) is_contractor,
+        			(
+        				SELECT TOP 1 attrition
+        				FROM :EMPLOYEE_HISTORY_TABLE EH
+        				WHERE EH.employee_id = CH.employee_id
+        					AND CAST(EH.[date] AS DATE) <= CAST(CH.[date] AS DATE)
+        				ORDER BY [date] DESC
+        				) attrition,
+        			(
+        				SELECT TOP 1 is_reduction
+        				FROM :EMPLOYEE_HISTORY_TABLE EH
+        				WHERE EH.employee_id = CH.employee_id
+        					AND CAST(EH.[date] AS DATE) <= CAST(CH.[date] AS DATE)
+        				ORDER BY [date] DESC
+        				) is_reduction,
+        			(
+        				SELECT TOP 1 id
+        				FROM :EMPLOYEE_HISTORY_TABLE EH
+        				WHERE EH.employee_id = CH.employee_id
+        					AND CAST(EH.[date] AS DATE) <= CAST(CH.[date] AS DATE)
+        				ORDER BY [date] DESC
+        				) id,
+        			(
+        				SELECT TOP 1 type
+        				FROM :EMPLOYEE_HISTORY_TABLE EH
+        				WHERE EH.employee_id = CH.employee_id
+        					AND CAST(EH.[date] AS DATE) <= CAST(CH.[date] AS DATE)
+        				ORDER BY [date] DESC
+        				) type,
+                    (
+        				SELECT TOP 1 reason_extended_leave_id
+        				FROM :EMPLOYEE_HISTORY_TABLE EH
+        				WHERE EH.employee_id = CH.employee_id
+        					AND CAST(EH.[date] AS DATE) <= CAST(CH.[date] AS DATE)
+        				ORDER BY [date] DESC
+        				) reason_extended_leave_id
+        		FROM commons_l3.dim_categories_history_latest CH
+        		) CH
+        	WHERE CH.STATUS IS NOT NULL
+        	)
+
+        SELECT *
+        INTO #EmployeeCategoriesStateCombined -- store it in the temporary table
+        FROM history_changes_with_categories
+
+        UNION
+
+        SELECT *
+        FROM categories_changes;
+
+        -- the next phase is to combine already joined employee and categories data with home change history data
+        -- combined_home also could be changed asycnhronously with employee change data and category change data
+        -- so the idea behind script below is the same as the above query but constructed via joins instead of regular subqueries
+
+        WITH combined_home
+        AS(SELECT employee_id,
+                  position_id,
+                  category_id,
+                  department_id,
+                  STATUS,
+                  DATE,
+                  date_time,
+                  is_contractor,
+                  attrition,
+                  is_reduction,
+                  id,
+                  type,
+                  country_id,
+                  city_id, 
+                  origin,
+                  reason_extended_leave_id        
+          FROM (
+              SELECT CS.employee_id,
+                    CS.position_id,
+                    CS.category_id,
+                    CS.department_id,
+                    CS.STATUS,
+                    CAST(CS.DATE AS DATE) AS DATE,
+                    CS.date_time,
+                    CS.is_contractor,
+                    CS.attrition,
+                    CS.is_reduction,
+                    CS.id,
+                    CS.type,
+                    CS.reason_extended_leave_id,
+                    HH.country_id,
+                    HH.city_id, 
+                    CS.origin + ' + ' + @home_origin_marker AS origin,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY CS.employee_id, --partition by combined employee id and the date from combined, but order by date from home-history
+                        CS.[date] ORDER BY CS.date_time DESC, HH.date DESC
+                        ) rn
+              FROM #EmployeeCategoriesStateCombined CS
+              LEFT JOIN commons_l3.fact_employees_home_history HH ON CS.employee_id = HH.employee_id
+                  AND CAST(HH.[date] AS DATE) <= CAST(CS.[date] AS DATE) -- the home-history data must be joined on <= combined data, in other case we will get inconsistent records
+                      ) A
+                  WHERE A.rn = 1
+        ),
+        combined_home_inverse
+        AS(SELECT employee_id,
+                  position_id,
+                  category_id,
+                  department_id,
+                  STATUS,
+                  DATE,
+                  date_time,
+                  is_contractor,
+                  attrition,
+                  is_reduction,
+                  id,
+                  type,
+                  country_id,
+                  city_id,
+                  origin,
+                  reason_extended_leave_id        
+              FROM (
+                  SELECT CS.employee_id,
+                      CS.position_id,
+                      CS.category_id,
+                      CS.department_id,
+                      CS.STATUS,
+                      HH.DATE,
+                      CS.date_time,
+                      CS.is_contractor,
+                      CS.attrition,
+                      CS.is_reduction,
+                      CS.id,
+                      CS.type,
+                      CS.reason_extended_leave_id,
+                      HH.country_id,
+                      HH.city_id,
+                      CASE
+                          WHEN (
+                                  SELECT TOP 1 CAST(DATE AS DATE)
+                                  FROM #EmployeeCategoriesStateCombined EH
+                                  WHERE EH.employee_id = HH.employee_id
+                                      AND CAST([date] AS DATE) <= CAST(HH.[date] AS DATE)
+                          ORDER BY EH.DATE DESC
+                          ) = CAST(HH.[date] AS DATE)
+                      THEN (
+                              SELECT TOP 1 origin + ' + ' + @home_origin_marker
+                              FROM #EmployeeCategoriesStateCombined EH
+                              WHERE EH.employee_id = HH.employee_id
+                                  AND CAST(EH.[date] AS DATE) = CAST(HH.[date] AS DATE)
+                              )
+                      ELSE @home_origin_marker
+                      END origin,
+                      ROW_NUMBER() OVER (
+                          PARTITION BY HH.employee_id,
+                          HH.[date] ORDER BY CS.date_time DESC -- now the inverse order, we partition by columns from home-history and order by date from combined table
+                          ) rn
+                  FROM #EmployeeCategoriesStateCombined CS
+                  RIGHT JOIN commons_l3.fact_employees_home_history HH ON CS.employee_id = HH.employee_id
+                      AND CAST(HH.[date] AS DATE) >= CAST(CS.[date] AS DATE) -- and also change the join condition
+                  ) A
+                  WHERE A.rn = 1 AND STATUS IS NOT NULL
+        )
+
+        SELECT *
+        INTO #ChangeState --temporary table
+        FROM combined_home
+        UNION
+        SELECT *
+        FROM combined_home_inverse
+
+        INSERT INTO :TARGET_TABLE (
+            employee_id, position_id, category_id, department_id, STATUS,
+            DATE, df, is_contractor, attrition, is_reduction, id, type,
+            country_id, city_id, origin, reason_extended_leave_id 
+        )
+        SELECT 
+        	employee_id,
+        	position_id,
+        	category_id,
+        	department_id,
+        	STATUS,
+        	DATE,
+            CAST(DATE AS DATE) AS df,
+        	is_contractor,
+        	attrition,
+        	is_reduction,
+        	id,
+        	type,
+        	country_id,
+        	city_id, 
+        	origin,
+        	reason_extended_leave_id 
+        FROM #ChangeState

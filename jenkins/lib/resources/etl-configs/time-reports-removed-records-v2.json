@@ -1,0 +1,54 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "time-reports-removed-records-ingestion",
+            "target_table": "dbo.util_fact_time_reports_removed_records_v2",
+            "from_to_params_names": ["modifiedFrom","modifiedTo"],
+            "partition_columns": "batch_id"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "INCREMENTAL",
+            "incremental": {
+                "incremental_strategy": "BACKFILL",
+                "general": {
+                    "batch_window": 15,
+                    "batch_window_unit": "days",
+                    "granularity": "seconds",
+                    "date_column": "modification_date",
+                    "default_partition_value": "2005-01-01 00:00:00"
+                },
+                "backfill": {
+                    "backfill_safe_window": "1 minute",
+                    "backfill_max_ranges_per_run": 3,
+                    "backfill_left_bound_kick_forward": "1 second",
+                    "backfill_crop_now": true
+                }
+            }
+        },
+        "enrichers": {
+            "field_mapping":
+                [
+                    {
+                      "from": "modificationDate",
+                      "to": "modification_date"
+                    }
+                ]
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "api_url": "https://vm-tex-01:8243/ets/report/effort/removed"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id" : "time_reports_removed_records_v2",
+            "catchup": false
+        }
+    }
+}

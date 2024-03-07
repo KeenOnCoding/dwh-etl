@@ -1,0 +1,29 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - commons_l3.fact_employees_home_history_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - commons_l3.fact_employees_home_history
+  queries:
+    - description: copy from tmp
+      staging-table: commons_l3.fact_employees_home_history_staging
+      partition-column: version
+      sql: |
+        INSERT INTO commons_l3.fact_employees_home_history (
+          version,
+          date,
+          df,
+          employee_id,
+          country_id,
+          city_id
+          )
+        SELECT version,
+          date,
+          CAST(date AS DATE) AS df,
+          employee_id,
+          country_id,
+          city_id
+        FROM commons_l3.fact_employees_home_history_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

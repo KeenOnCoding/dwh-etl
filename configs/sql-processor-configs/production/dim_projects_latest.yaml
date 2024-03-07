@@ -1,0 +1,37 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - commons_l3.dim_projects_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - commons_l3.dim_projects_latest
+  queries:
+    - description: copy from tmp
+      staging-table: commons_l3.dim_projects_staging
+      partition-column: version
+      sql: |
+        INSERT INTO commons_l3.dim_projects_latest
+        SELECT
+          version,
+          id,
+          project_code,
+          project_type,
+          cost_center_id,
+          account_id,
+          project_state,
+          pm_id,
+          spm_id,
+          am_id,
+          dm_id,
+          ets_id,
+          is_internal,
+          creation_date,
+          localization_id,
+          country_id,
+          innovation,
+          business_type_id,
+          sales_channel_id,
+          regional_segment_id
+        FROM commons_l3.dim_projects_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

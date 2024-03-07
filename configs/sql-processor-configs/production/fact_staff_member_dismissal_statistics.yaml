@@ -1,0 +1,19 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - hr_l2.fact_staff_member_dismissal_statistics_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - hr_l2.fact_staff_member_dismissal_statistics
+  queries:
+    - description: copy from staging into latest and truncate staging table
+      staging-table: hr_l2.fact_staff_member_dismissal_statistics_staging
+      partition-column: version
+      sql: |
+        INSERT INTO hr_l2.fact_staff_member_dismissal_statistics
+        SELECT *
+        FROM hr_l2.fact_staff_member_dismissal_statistics_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};
+
+        TRUNCATE TABLE hr_l2.fact_staff_member_dismissal_statistics_staging;

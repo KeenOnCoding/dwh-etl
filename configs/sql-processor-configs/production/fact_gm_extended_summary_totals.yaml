@@ -1,0 +1,92 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - finance_l2.fact_gm_extended_summary_all_units_staging
+  queries:
+    - description: delete replaced data
+      staging-table: finance_l2.fact_gm_extended_summary_all_units_staging~A
+      partition-column: batch_id
+      sql: |
+        DELETE FROM finance_l2.fact_gm_extended_summary_all_units
+        WHERE [date] >= (
+          SELECT
+            MIN([date])
+          FROM
+            finance_l2.fact_gm_extended_summary_all_units_staging A
+          WHERE {BATCH_HIGH_LOW_FILTER}
+        );
+
+        -- copy salaries from staging
+        INSERT INTO finance_l2.fact_gm_extended_summary_all_units(
+          [date],
+          df,
+          [type],
+          total_revenue,
+          income_hrs,
+          income_costs,
+          income_prepayment,
+          income_discount,
+          income_external_fee,
+          customer_rate,
+          direct_costs,
+          direct_costs_salary,
+          direct_costs_blbl,
+          direct_costs_non_blbl,
+          gross_margin,
+          total_indirect_costs,
+          ebit,
+          utilization_hrs_blb,
+          utilization_hrs_all,
+          department_costs,
+          department_costs_per_debit_fte,
+          average_salary,
+          debit_fte,
+          headcount,
+          total_revenue_excl_prepayment,
+          gross_margin_excl_prepayment,
+          total_revenue_excl_prepayment_avg_norm,
+          hrs_avg_norm,
+          gross_margin_excl_prepayment_avg_norm,
+          taxes,
+          insurance,
+          income_sales_fee_received,
+          income_sales_fee_paid,
+          batch_id)
+        SELECT
+          A.[date],
+          CAST(A.[date] AS DATE) AS df,
+          A.[type],
+          A.total_revenue,
+          A.income_hrs,
+          A.income_costs,
+          A.income_prepayment,
+          A.income_discount,
+          A.income_external_fee,
+          A.customer_rate,
+          A.direct_costs,
+          A.direct_costs_salary,
+          A.direct_costs_blbl,
+          A.direct_costs_non_blbl,
+          A.gross_margin,
+          A.total_indirect_costs,
+          A.ebit,
+          A.utilization_hrs_blb,
+          A.utilization_hrs_all,
+          A.department_costs,
+          A.department_costs_per_debit_fte,
+          A.average_salary,
+          A.debit_fte,
+          A.headcount,
+          A.total_revenue_excl_prepayment,
+          A.gross_margin_excl_prepayment,
+          A.total_revenue_excl_prepayment_avg_norm,
+          A.hrs_avg_norm,
+          A.gross_margin_excl_prepayment_avg_norm,
+          A.taxes,
+          A.insurance,
+          A.income_sales_fee_received,
+          A.income_sales_fee_paid,
+          A.batch_id
+        FROM finance_l2.fact_gm_extended_summary_all_units_staging A
+        WHERE {BATCH_HIGH_LOW_FILTER}

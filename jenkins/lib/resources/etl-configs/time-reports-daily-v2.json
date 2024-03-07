@@ -1,0 +1,11 @@
+{
+  "processing": {
+    "daily_processor": {
+      "daily_proc_target_table" : "resourcing_l3.fact_time_reports_daily_v2",
+      "daily_proc_source_table": "resourcing_l3.fact_time_reports_v2",
+      "default_partition_value": "2019-01-01 00:00:00",
+      "batch_window": 3,
+      "date_column": "started"
+    }
+  }
+}

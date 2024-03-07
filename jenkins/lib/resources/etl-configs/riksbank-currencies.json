@@ -1,0 +1,63 @@
+{
+  "ingestion": {
+    "general": {
+      "job_name": "riksbank-currencies-ingestion",
+      "target_table": "commons_l3.dim_riksbank_currency_codes_staging",
+      "partition_columns": "version"
+    },
+    "fetching_strategy": {
+      "fetching_strategy": "SNAPSHOT"
+    },
+    "enrichers": {
+      "track_db_schema": true,
+      "hash_column": "hash_sum",
+      "field_mapping": [
+        {
+          "from": "seriesId",
+          "to": "series_id"
+        },
+        {
+          "from": "source",
+          "to": "source"
+        },
+        {
+          "from": "shortDescription",
+          "to": "short_description"
+        },
+        {
+          "from": "midDescription",
+          "to": "mid_description"
+        },
+        {
+          "from": "longDescription",
+          "to": "long_description"
+        },
+        {
+          "from": "groupId",
+          "to": "group_id"
+        },
+        {
+          "from": "observationMaxDate",
+          "to": "observation_max_date"
+        },
+        {
+          "from": "observationMinDate",
+          "to": "observation_min_date"
+        },
+        {
+          "from": "seriesClosed",
+          "to": "series_closed"
+        }
+      ]
+    },
+    "data_source": {
+      "data_source": "GENERIC-REST",
+      "api_url": "https://api.riksbank.se/swea/v1/Series/ByGroup/130"
+    }
+  },
+  "processing": {
+    "sql_processor": {
+      "plan_id": "dim_riksbank_currency_codes_latest"
+    }
+  }
+}

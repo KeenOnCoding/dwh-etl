@@ -1,0 +1,52 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - :util_table
+  queries:
+    - description: insert changed rows to history
+      sql: |
+        DECLARE @version_from INT
+
+        -- Get last chekpoint for a table
+        SET
+        @version_from = ISNULL((
+          SELECT
+            MAX(version)
+          FROM
+            :util_table
+          WHERE
+            source_table = ':staging_table'
+        ), :default_checkpoint_value);
+
+        -- Get versions to load
+        WITH versions_to_analyze AS (
+          SELECT DISTINCT
+            version
+          FROM
+            :staging_table
+          WHERE
+            version >= @version_from
+        )
+
+        INSERT INTO :target_table
+        SELECT
+          CURR.*
+        FROM :staging_table CURR
+        LEFT JOIN :staging_table PREV ON (
+            CURR.:id_column = PREV.:id_column
+            AND PREV.version = (
+              SELECT
+                MAX(version)
+              FROM
+                versions_to_analyze
+              WHERE
+                version < CURR.version)
+          )
+        WHERE CURR.version > @version_from
+          AND (CURR.hash_sum != PREV.hash_sum OR PREV.:id_column is NULL);
+    - description: insert record to checkpoint table
+      sql: |
+          INSERT INTO :util_table (version, creation_date, source_table)
+          SELECT MAX(version), GETDATE(), ':staging_table'
+          FROM :staging_table

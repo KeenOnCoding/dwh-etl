@@ -1,0 +1,148 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - resourcing_l3.fact_utilization_tool_data_staging
+  queries:
+    - description: update batch in latest and unpack nested rows from staging
+      staging-table: resourcing_l3.fact_utilization_tool_data_staging
+      partition-column: batch_id
+      auto-cleanup:
+        - "#YEAR_WEEK_LAST_BATCH"
+        - "#UTILIZATION_LAST_BATCH"
+      sql: |
+        -- last batch without corrupted records
+        SELECT *
+        INTO #UTILIZATION_LAST_BATCH
+        FROM resourcing_l3.fact_utilization_tool_data_staging
+        WHERE {BATCH_HIGH_LOW_FILTER} AND
+          ((staff_member_id IS NOT NULL AND is_candidate = 0) OR (staff_member_id IS NULL AND is_candidate = 1));
+
+
+
+        SELECT DISTINCT CONCAT([year], week_number) year_week_number
+        INTO #YEAR_WEEK_LAST_BATCH
+        FROM #UTILIZATION_LAST_BATCH;
+
+        -- drop from latest table to prevent populating duplicates
+        DELETE FROM resourcing_l3.fact_utilization_tool_data
+        WHERE CONCAT([year], week_number) IN (SELECT * FROM #YEAR_WEEK_LAST_BATCH);
+
+        DELETE FROM resourcing_l3.fact_utilization_technology_staff_member
+        WHERE CONCAT([year], week_number) IN (SELECT * FROM #YEAR_WEEK_LAST_BATCH);
+
+        DELETE FROM resourcing_l3.fact_utilization_opportunity_staff_member
+        WHERE CONCAT([year], week_number) IN (SELECT * FROM #YEAR_WEEK_LAST_BATCH);
+
+        DELETE FROM dbo.util_uttool_error
+        WHERE CONCAT([year], week_number) IN (SELECT * FROM #YEAR_WEEK_LAST_BATCH);
+
+        -- add corrupted records to error table
+               INSERT INTO dbo.util_uttool_error
+                 (staff_member_id,
+                 open_for_sale,
+                 project_starter,
+                 week_number,
+                 [year],
+                 nblb_value,
+                 avbl_value,
+                 [type],
+                 batch_id,
+                 is_candidate,
+                 technologies,
+                 opportunities,
+                 sid,
+                 planned_action,
+                 monday_of_week)
+               SELECT
+                 staff_member_id,
+                 open_for_sale,
+                 project_starter,
+                 week_number,
+                 [year],
+                 nblb_value,
+                 avbl_value,
+                 [type],
+                 batch_id,
+                 is_candidate,
+                 technologies,
+                 opportunities,
+                 sid,
+                 planned_action,
+                 monday_of_week
+               FROM resourcing_l3.fact_utilization_tool_data_staging
+               WHERE {BATCH_HIGH_LOW_FILTER} AND NOT
+                                                   ((staff_member_id IS NOT NULL AND is_candidate = 0)
+                                                   OR (staff_member_id IS NULL AND is_candidate = 1));
+
+        INSERT INTO resourcing_l3.fact_utilization_tool_data
+          (staff_member_id,
+          open_for_sale,
+          project_starter,
+          week_number,
+          [year],
+          nblb_value,
+          avbl_value,
+          [type],
+          batch_id,
+          is_candidate,
+          sid,
+          planned_action,
+          monday_of_week)
+        SELECT
+          staff_member_id,
+          open_for_sale,
+          project_starter,
+          week_number,
+          [year],
+          nblb_value,
+          avbl_value,
+          [type],
+          batch_id,
+          is_candidate,
+          sid,
+          planned_action,
+          monday_of_week
+        FROM #UTILIZATION_LAST_BATCH;
+
+        INSERT INTO resourcing_l3.fact_utilization_technology_staff_member
+          (staff_member_id,
+          technology_name,
+          [year],
+          week_number,
+          batch_id,
+          sid,
+          monday_of_week)
+        SELECT
+          staff_member_id,
+          exploded_technologies.[value],
+          [year],
+          week_number,
+          batch_id,
+          sid,
+          monday_of_week
+        FROM #UTILIZATION_LAST_BATCH A CROSS APPLY OPENJSON(A.technologies) as exploded_technologies;
+
+        INSERT INTO resourcing_l3.fact_utilization_opportunity_staff_member
+          (staff_member_id,
+          opportunity_name,
+          probability,
+          account_id,
+          [year],
+          week_number,
+          batch_id,
+          sid,
+          monday_of_week)
+        SELECT
+          A.staff_member_id,
+          JSON_VALUE(exploded_opportunities.[value], '$.opportunity_name') AS opportunity_name,
+          JSON_VALUE(exploded_opportunities.[value], '$.probability') AS probability,
+          ISNULL(ACCOUNT.id, 'PLANNED') account_id,
+          A.[year],
+          A.week_number,
+          A.batch_id,
+          A.sid,
+          A.monday_of_week
+        FROM #UTILIZATION_LAST_BATCH A CROSS APPLY OPENJSON(A.opportunities) AS exploded_opportunities
+        LEFT JOIN commons_l3.dim_accounts_latest AS ACCOUNT
+        ON JSON_VALUE(exploded_opportunities.[value], '$.account_name') = ACCOUNT.name

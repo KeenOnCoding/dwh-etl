@@ -1,0 +1,22 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - finance_l1.dim_cashboxes_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - finance_l1.dim_cashboxes_latest
+  queries:
+    - description: copy from tmp
+      staging-table: finance_l1.dim_cashboxes_staging
+      partition-column: version
+      sql: |
+        INSERT INTO finance_l1.dim_cashboxes_latest
+        SELECT
+          currency_id,
+          id,
+          name,
+          version,
+          ssw_party
+        FROM finance_l1.dim_cashboxes_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

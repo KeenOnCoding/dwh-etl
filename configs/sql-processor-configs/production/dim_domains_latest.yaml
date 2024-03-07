@@ -1,0 +1,17 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - commons_l3.dim_domains_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - commons_l3.dim_domains_latest
+  queries:
+    - description: copy from tmp
+      staging-table: commons_l3.dim_domains_staging
+      partition-column: version
+      sql: |
+        INSERT INTO commons_l3.dim_domains_latest
+        SELECT version, id, name
+        FROM commons_l3.dim_domains_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

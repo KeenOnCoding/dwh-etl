@@ -1,0 +1,43 @@
+{
+    "ingestion": {
+        "general": {
+            "job_name": "hr-tool-questionnaire-submissions-ingestion",
+            "target_table": "hr_l2.fact_hr_tool_questionnaire_submission_staging",
+            "from_to_params_names": ["after"],
+            "partition_columns": "batch_id"
+        },
+        "auth": {
+            "auth_strategy": "OAUTH2",
+            "auth_url": "https://vm-tex-01:8243/token",
+            "client_id": "${CLIENT_ID}",
+            "client_secret": "${CLIENT_SECRET}",
+            "scope": "staffmemberf2f_read"
+        },
+        "fetching_strategy": {
+            "fetching_strategy": "INCREMENTAL",
+            "incremental": {
+                "incremental_strategy": "COLUMN-DATE",
+                "general": {
+                    "granularity": "seconds",
+                    "date_column": "updated_at",
+                    "default_partition_value": "2018-01-01 00:00:00"
+                }
+            }
+        },
+        "enrichers": {
+            "track_db_schema": true,
+            "stringify_json_columns": ["answers"]
+        },
+        "data_source": {
+            "data_source": "GENERIC-REST",
+            "data_response_key": "QuestionnaireSubmissions",
+            "extra_params": "limit=10000",
+            "api_url": "https://vm-tex-01:8243/questionnaires/submissions"
+        }
+    },
+    "processing": {
+        "sql_processor": {
+            "plan_id": "fact_hr_tool_questionnaire_submission"
+        }
+    }
+}

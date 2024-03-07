@@ -1,0 +1,27 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - commons_l3.dim_ets_users_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - commons_l3.dim_ets_users_latest
+  queries:
+    - description: copy from tmp
+      staging-table: commons_l3.dim_ets_users_staging
+      partition-column: version
+      sql: |
+        INSERT INTO commons_l3.dim_ets_users_latest
+        SELECT version, user_code, user_display_name, linear_manager,
+            is_contractor,
+            case 
+                when is_part_time=1 then 1
+                else 0
+            end is_part_time,
+            is_intern,
+            calendar_id,
+            external_id,
+            user_id,
+            linear_manager_id
+        FROM commons_l3.dim_ets_users_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

@@ -1,0 +1,21 @@
+query-plan:
+  tables:
+    partition_column: batch_id
+    table_names:
+      - finance_l2.fact_ovr_per_fte_monthly_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - finance_l2.fact_ovr_per_fte_monthly_latest
+  queries:
+    - description: copy from tmp
+      staging-table: finance_l2.fact_ovr_per_fte_monthly_staging
+      partition-column: batch_id
+      sql: |
+        INSERT INTO finance_l2.fact_ovr_per_fte_monthly_latest
+        SELECT
+          date,
+          oh_per_admin,
+          oh_per_production,
+          batch_id
+        FROM finance_l2.fact_ovr_per_fte_monthly_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};

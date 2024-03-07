@@ -1,0 +1,31 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - test_table_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - dbo.test_table_latest
+  queries:
+    - description: drop table if it exists
+      sql: |
+        IF OBJECT_ID('dbo.tmp_test_table_latest', 'U') IS NOT NULL
+        DROP TABLE dbo.tmp_test_table_latest;
+    - description: creating tmp table
+      sql: |
+        CREATE TABLE [sigma-dwh].dbo.tmp_test_table_latest (
+          id CHAR(36) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+          name NVARCHAR(128) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+          PRIMARY KEY (id));
+    - description: copy from tmp
+      sql: |
+        INSERT INTO tmp_test_table_latest
+        SELECT id, name FROM test_table_staging
+        WHERE version = :test_table_staging_version;
+    - description: copy from tmp and drop tmp database
+      sql: |
+        BEGIN TRAN
+          EXEC sp_rename test_table_latest, test_table_latest_old;
+          EXEC sp_rename tmp_test_table_latest, test_table_latest;
+          DROP TABLE test_table_latest_old;
+        COMMIT

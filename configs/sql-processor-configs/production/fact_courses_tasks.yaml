@@ -1,0 +1,48 @@
+query-plan:
+  tables:
+    partition_column: version
+    table_names:
+      - lms_l3.fact_courses_tasks_staging
+  variables:
+    TABLES_TO_REWRITE:
+      - lms_l3.fact_courses_tasks
+  queries:
+    - description: overwrite fact_courses_tasks
+      staging-table: lms_l3.fact_courses_tasks_staging
+      partition-column: version
+      sql: |
+
+        DECLARE @Pattern VARCHAR(200) = 'https://courses.university.sigma.software/courses/%/about';
+
+        IF (SELECT COUNT(1) FROM lms_l3.fact_courses_tasks_staging WHERE {BATCH_HIGH_LOW_FILTER} AND course_url NOT LIKE @Pattern) > 0
+        BEGIN
+            THROW 51000, 'Some course_url values do not match the expected pattern.', 16;
+        END;
+        INSERT INTO lms_l3.fact_courses_tasks(
+            id,
+            [date],
+            deadline,
+            employee_id,
+            course_url,
+            course_id,
+            is_started,
+            is_finished,
+            deletion_mark,
+            version
+        )
+        SELECT
+            id,
+            [date],
+            deadline,
+            employee_id,
+            course_url,
+            SUBSTRING(course_url,
+              CHARINDEX('https://courses.university.sigma.software/courses/', course_url) + LEN('https://courses.university.sigma.software/courses/'),
+              CHARINDEX('/about', course_url) - CHARINDEX('https://courses.university.sigma.software/courses/', course_url) - LEN('https://courses.university.sigma.software/courses/')
+            ) AS course_id,
+            is_started,
+            is_finished,
+            deletion_mark,
+            version
+        FROM lms_l3.fact_courses_tasks_staging
+        WHERE {BATCH_HIGH_LOW_FILTER};
